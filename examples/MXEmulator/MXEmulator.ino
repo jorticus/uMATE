@@ -1,4 +1,13 @@
 // Example that emulates an Outback MX charger device
+//
+// You can use this to poke values at an Outback MATE controller
+// to see how each byte is displayed on the LCD, and how
+// the MATE controller interacts with devices.
+//
+// You can also use this to implement your own MX-compatible
+// charger interface, though you're quite restricted in what
+// you can do with this protocol...
+//
 
 #include <uMate.h>
 #include <Serial9b.h>
@@ -39,8 +48,8 @@ void loop() {
 
         switch (packet.type) {
             case PacketType::Query:
-                query(packet.addr, OUT &response.value);
-                // Always respond, even if we didn't do anything
+                response.value = query(packet.addr);
+                // Always respond, even if we can't handle this address
                 mate_bus.send_response(0x03, &response);
                 break;
 
@@ -62,30 +71,73 @@ void loop() {
     }
 }
 
-bool query(uint16_t addr, OUT uint16_t* value)
+uint16_t query(uint16_t addr)
 {
     switch (addr) {
         // Scan
-        case 0x0000:
+        case 0:
             Serial.println("SCAN QUERY");
             // NOTE: I've occasionally seen the upper byte of this return something non-zero (from MX/FX devices).
-            // Unsure what it means, so just leave it 00 here...
-            *value = (uint16_t)DeviceType::Mx;
-            return true;
+            // Unsure what it means, so just leave it 00 here and return the device type in the lower byte...
+            return (uint16_t)DeviceType::Mx;
 
-        // Revision (2.3.4)
-        case 0x0002:
-            *value = 1;
-            return true;
-        case 0x0003:
-            *value = 2;
-            return true;
-        case 0x0004:
-            *value = 3;
-            return true;
+        // Revision (1.2.3)
+        case 2: return 1;
+        case 3: return 2;
+        case 4: return 3;
+
+        ///// STATUS/CC/METER /////
+        // Charger Watts (1)
+        case 0x016A: return 44;
+        // Charger kWh (1/10)
+        case 0x01EA: return 55;
+        // Charger amps DC (-128..127, 0Amps=128)
+        case 0x01C7: return 128; // 0 amps
+        // Battery voltage (1/10)
+        case 0x0008: return 77;
+        // Panel voltage (1)
+        case 0x01C6: return 88;
+        
+        ///// STATUS/CC/MODE /////
+        // Mode (0..4)
+        case 0x01C8: return 4; // Equalize
+        // Aux Relay Mode / Aux Relay State
+        case 0x01C9:
+            // bit 7: relay state
+            // bit 6..0: relay mode
+            //   0: Float
+            //   1: Diversion: Relay
+            //   2: Diversion: Solid St
+            //   3: Low batt disconnect
+            //   4: Remote
+            //   5: Vent fan
+            //   6: PV Trigger
+            //   7: Error output
+            //   8: Night light
+            return 0x86; // Relay on, PV trigger
+
+        ///// STATUS/CC/STAT /////
+        // Maximum battery (1/10)
+        case 0x000F: return 111;
+        // VOC (1/10)
+        case 0x0010: return 112;
+        // Max VOC (1/10)
+        case 0x0012: return 133;
+        // Total kWH DC (1)
+        case 0x0013: return 144;
+        // Total kAH (1/10)
+        case 0x0014: return 155;
+        // Max wattage (1)
+        case 0x0015: return 166;
+
+        ///// STATUS/CC/SETPT /////
+        // Absorb (1/10)
+        case 0x0170: return 177;
+        // Float (1/10)
+        case 0x0172: return 188;
     }
 
-    return false;
+    return 0;
 }
 
 bool control(packet_t& packet)
