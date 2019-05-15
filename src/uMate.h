@@ -1,0 +1,16 @@
+#ifndef UMATE_H
+#define UMATE_H
+
+#ifndef OUT
+#define OUT
+#endif
+
+#define SWAPENDIAN_16(x) (uint16_t)((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#define SWAPENDIAN_32(x)            (uint32_t)((((x) & 0xFF000000UL) >> 24UL) | (((x) & 0x00FF0000UL) >> 8UL) | \
+                                               (((x) & 0x0000FF00UL) << 8UL)  | (((x) & 0x000000FFUL) << 24UL))
+
+#include "MateNetPort.h"
+#include "MateController.h"
+#include "MateDevice.h"
+
+#endif /* UMATE_H */
