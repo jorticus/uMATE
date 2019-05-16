@@ -13,9 +13,8 @@ enum DeviceType {
     None = 0,
     Hub = 1,
     Fx = 2,
-    Mx = 3
-    // Mate?
-    // Flexnet?
+    Mx = 3,
+    FlexNetDc = 4
 } ;
 
 enum PacketType {

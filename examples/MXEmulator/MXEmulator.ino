@@ -14,7 +14,7 @@
 
 MateDevice mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
 
-bool query(uint16_t addr, OUT uint16_t& value);
+uint16_t query(uint16_t addr);
 bool control(packet_t& packet);
 void status(packet_t& packet);
 void log(packet_t& packet);
@@ -22,6 +22,7 @@ void log(packet_t& packet);
 void setup() {
     Serial.begin(9600);
     mate_bus.begin();
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
@@ -31,6 +32,8 @@ void loop() {
 
     if (mate_bus.recv_packet(&dest_port, &packet))
     {
+        digitalWrite(LED_BUILTIN, HIGH);
+
         Serial.println("Packet received"); 
         Serial.print("  port:  "); Serial.println(dest_port);
         Serial.print("  type:  "); Serial.print(packet.type, 16);
@@ -68,6 +71,7 @@ void loop() {
                 break;
         }
 
+        digitalWrite(LED_BUILTIN, LOW);
     }
 }
 
