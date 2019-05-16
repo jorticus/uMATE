@@ -15,14 +15,29 @@ bool MateController::begin()
 }
 */
 
+void MateController::set_timeout(int timeoutMillisec)
+{
+    this->timeout = timeoutMillisec;
+}
+
 void MateController::send_packet(uint8_t port, packet_t* packet)
 {
-    send_data(port, reinterpret_cast<uint8_t*>(&packet), sizeof(packet_t));
+    if (packet == nullptr)
+        return;
+
+    // AVR is little-endian, but protocol is big-endian. Must swap bytes...
+    packet->addr = SWAPENDIAN_16(packet->addr);
+    packet->param = SWAPENDIAN_16(packet->param);
+
+    send_data(port, reinterpret_cast<uint8_t*>(packet), sizeof(packet_t));
 }
 
 
 bool MateController::recv_response(OUT uint8_t* for_command, OUT response_t* response)
 {
+    if (for_command == nullptr || response == nullptr)
+        return false;
+
     bool received = recv_data(for_command, reinterpret_cast<uint8_t*>(response), sizeof(response_t));
     if (received) {
         // port is actually the command we're responding to, plus an error flag in bit7
@@ -34,10 +49,25 @@ bool MateController::recv_response(OUT uint8_t* for_command, OUT response_t* res
             }
             return false; // Invalid command
         }
+
+        response->value = SWAPENDIAN_16(response->value);
     }
+    return received;
 }
 
-uint16_t MateController::query(uint16_t reg, uint16_t param, uint8_t port)
+bool MateController::recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response)
+{
+    for (int i = 0; i < this->timeout; i++) {
+        if (recv_response(for_command, response)) {
+            return true;
+        }
+        delay(1);
+    }
+    //if (debug) { debug->println("RX timeout"); }
+    return false;
+}
+
+int16_t MateController::query(uint16_t reg, uint16_t param, uint8_t port)
 {
     packet_t packet;
     //packet.port = port;
@@ -47,16 +77,17 @@ uint16_t MateController::query(uint16_t reg, uint16_t param, uint8_t port)
 
     send_packet(port, &packet);
 
-    // Wait for response (BLOCKING)
-    uint8_t recv_port;
+    // Wait for response, with timeout (BLOCKING)
+    uint8_t for_command;
     response_t response;
-    while (!recv_response(&recv_port, &response))
-        continue; // TODO: Timeout
+    if (recv_response_blocking(&for_command, &response)) {
+        return response.value;
+    }
 
-    return response.value;
+    return -1;
 }
 
-void MateController::control(uint16_t reg, uint16_t value, uint8_t port)
+bool MateController::control(uint16_t reg, uint16_t value, uint8_t port)
 {
     packet_t packet;
     packet.type = PacketType::Control;
@@ -66,19 +97,29 @@ void MateController::control(uint16_t reg, uint16_t value, uint8_t port)
     send_packet(port, &packet);
 
     // Does this send a response?
+    return true;
 }
 
 
 DeviceType MateController::scan(uint8_t port)
 {
-    uint16_t value = query(0x00, 0, port);
-    
-    return (DeviceType)value;
+    int16_t value = query(0x00, 0, port);
+    if (value >= 0 && value < DeviceType::MaxDevices) {
+        return (DeviceType)value;
+    }
+    return DeviceType::None;
 }
 
 
 revision_t MateController::get_revision(uint8_t port)
 {
+    int16_t value = 0;
     revision_t rev;
-    query(0x0002, 0, port);
+    if ((value = query(2, 0, port)) >= 0)
+        rev.a = value;
+    if ((value = query(3, 0, port)) >= 0)
+        rev.b = value;
+    if ((value = query(4, 0, port)) >= 0)
+        rev.c = value;
+    return rev;
 }

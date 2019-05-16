@@ -14,15 +14,17 @@ enum DeviceType {
     Hub = 1,
     Fx = 2,
     Mx = 3,
-    FlexNetDc = 4
-} ;
+    FlexNetDc = 4,
+
+    MaxDevices
+};
 
 enum PacketType {
     Query = 2,
     Control = 3,
     Status = 4,
     Log = 22
-} ;
+};
 
 typedef __attribute__((packed)) struct {
     uint8_t type;
