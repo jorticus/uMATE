@@ -53,7 +53,7 @@ public:
     { }
 
     void send_packet(uint8_t port, packet_t* packet);
-    bool recv_response(OUT uint8_t* port, OUT response_t* response);
+    bool recv_response(OUT uint8_t* for_command, OUT response_t* response);
 
     // Query a register and retrieve its value (BLOCKING)
     // reg:      The register address
