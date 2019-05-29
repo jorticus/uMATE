@@ -100,16 +100,58 @@ bool MateControllerProtocol::control(uint16_t reg, uint16_t value, uint8_t port)
     return true;
 }
 
+void MateControllerProtocol::scan_ports()
+{
+    // Clear existing devices
+    devices_scanned = false;
+    for (int i = 0; i < NUM_PORTS; i++) {
+        devices[i] = DeviceType::None;
+    }
+
+    DeviceType root_dtype = scan(0);
+    devices[0] = root_dtype;
+
+    if (root_dtype == DeviceType::Hub) {
+        for (int i = 1; i < NUM_PORTS; i++) {
+            devices[i] = scan(i);
+        }
+    }
+
+    devices_scanned = true;
+}
 
 DeviceType MateControllerProtocol::scan(uint8_t port)
 {
-    int16_t value = query(0x00, 0, port);
-    if (value >= 0 && value < DeviceType::MaxDevices) {
-        return (DeviceType)value;
+    if (port > NUM_PORTS)
+        return DeviceType::None;
+
+    if (devices_scanned) {
+        return devices[port];
     }
-    return DeviceType::None;
+    else {
+        int16_t value = query(0x00, 0, port);
+        if (value >= 0 && value < DeviceType::MaxDevices) {
+            return (DeviceType)value;
+        }
+        return DeviceType::None;
+    }
 }
 
+int8_t MateControllerProtocol::find_device(DeviceType dtype)
+{
+    // Use cached devices
+    if (!devices_scanned) {
+        scan_ports();
+    }
+
+    for (int i = 0; i < NUM_PORTS; i++) {
+        if (devices[i] == dtype) {
+            return i;
+        }
+    }
+
+    return -1; // Not found.
+}
 
 revision_t MateControllerProtocol::get_revision(uint8_t port)
 {

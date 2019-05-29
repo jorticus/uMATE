@@ -11,6 +11,8 @@
 
 #include "MateNetPort.h"
 #include "MateControllerProtocol.h"
+//#include "MateControllerDevice.h" // TODO: This doesn't compile here...
 #include "MateDeviceProtocol.h"
+
 
 #endif /* UMATE_H */

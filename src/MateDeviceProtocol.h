@@ -1,5 +1,5 @@
-#ifndef MATE_DEVICE_H
-#define MATE_DEVICE_H
+#ifndef MATE_DEVICE_PROTOCOL_H
+#define MATE_DEVICE_PROTOCOL_H
 
 #include "uMate.h"
 
@@ -22,4 +22,4 @@ public:
 };
 
 
-#endif /* MATE_DEVICE_H */
+#endif /* MATE_DEVICE_PROTOCOL_H */
