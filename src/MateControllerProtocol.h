@@ -45,10 +45,14 @@ private:
 };
 */
 
-class MateController : public MateNetPort
+/*
+    Allows you to control devices attached to a MATE bus.
+    Emulates the functionality of a MATE2/MATE3 unit.
+*/
+class MateControllerProtocol : public MateNetPort
 {
 public:
-    MateController(HardwareSerial9b& ser, Stream* debug = nullptr)
+    MateControllerProtocol(HardwareSerial9b& ser, Stream* debug = nullptr)
         : MateNetPort(ser, debug), timeout(100)
     { }
 

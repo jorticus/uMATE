@@ -1,7 +1,7 @@
 #include "MateNetPort.h"
-#include "MateDevice.h"
+#include "MateDeviceProtocol.h"
 
-bool MateDevice::recv_packet(OUT uint8_t* port, OUT packet_t* packet)
+bool MateDeviceProtocol::recv_packet(OUT uint8_t* port, OUT packet_t* packet)
 {
     if (port == nullptr || packet == nullptr)
         return false;
@@ -15,7 +15,7 @@ bool MateDevice::recv_packet(OUT uint8_t* port, OUT packet_t* packet)
     return received;
 }
 
-void MateDevice::send_response(uint8_t port, response_t* response)
+void MateDeviceProtocol::send_response(uint8_t port, response_t* response)
 {
     if (response == nullptr)
         return;

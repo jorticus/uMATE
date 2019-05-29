@@ -12,7 +12,7 @@
 #include <uMate.h>
 #include <Serial9b.h>
 
-MateDevice mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+MateDeviceProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
 
 uint16_t query(uint16_t addr);
 bool control(packet_t& packet);

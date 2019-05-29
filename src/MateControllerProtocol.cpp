@@ -1,8 +1,8 @@
 
-#include "MateController.h"
+#include "MateControllerProtocol.h"
 
 /*
-bool MateController::begin()
+bool MateControllerProtocol::begin()
 {
     // auto dtype = _bus.scan(port);
     // if (dtype == DeviceType::Mate) {
@@ -15,12 +15,12 @@ bool MateController::begin()
 }
 */
 
-void MateController::set_timeout(int timeoutMillisec)
+void MateControllerProtocol::set_timeout(int timeoutMillisec)
 {
     this->timeout = timeoutMillisec;
 }
 
-void MateController::send_packet(uint8_t port, packet_t* packet)
+void MateControllerProtocol::send_packet(uint8_t port, packet_t* packet)
 {
     if (packet == nullptr)
         return;
@@ -33,7 +33,7 @@ void MateController::send_packet(uint8_t port, packet_t* packet)
 }
 
 
-bool MateController::recv_response(OUT uint8_t* for_command, OUT response_t* response)
+bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT response_t* response)
 {
     if (for_command == nullptr || response == nullptr)
         return false;
@@ -55,7 +55,7 @@ bool MateController::recv_response(OUT uint8_t* for_command, OUT response_t* res
     return received;
 }
 
-bool MateController::recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response)
+bool MateControllerProtocol::recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response)
 {
     for (int i = 0; i < this->timeout; i++) {
         if (recv_response(for_command, response)) {
@@ -67,7 +67,7 @@ bool MateController::recv_response_blocking(OUT uint8_t* for_command, OUT respon
     return false;
 }
 
-int16_t MateController::query(uint16_t reg, uint16_t param, uint8_t port)
+int16_t MateControllerProtocol::query(uint16_t reg, uint16_t param, uint8_t port)
 {
     packet_t packet;
     //packet.port = port;
@@ -87,7 +87,7 @@ int16_t MateController::query(uint16_t reg, uint16_t param, uint8_t port)
     return -1;
 }
 
-bool MateController::control(uint16_t reg, uint16_t value, uint8_t port)
+bool MateControllerProtocol::control(uint16_t reg, uint16_t value, uint8_t port)
 {
     packet_t packet;
     packet.type = PacketType::Control;
@@ -101,7 +101,7 @@ bool MateController::control(uint16_t reg, uint16_t value, uint8_t port)
 }
 
 
-DeviceType MateController::scan(uint8_t port)
+DeviceType MateControllerProtocol::scan(uint8_t port)
 {
     int16_t value = query(0x00, 0, port);
     if (value >= 0 && value < DeviceType::MaxDevices) {
@@ -111,7 +111,7 @@ DeviceType MateController::scan(uint8_t port)
 }
 
 
-revision_t MateController::get_revision(uint8_t port)
+revision_t MateControllerProtocol::get_revision(uint8_t port)
 {
     int16_t value = 0;
     revision_t rev;

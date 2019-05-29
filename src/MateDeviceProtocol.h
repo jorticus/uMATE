@@ -3,10 +3,14 @@
 
 #include "uMate.h"
 
-class MateDevice : public MateNetPort
+/*
+    Allows you to communicate with the MATE bus as a device.
+    useful for emulating devices (Hub, MX, FX, etc)
+*/
+class MateDeviceProtocol : public MateNetPort
 {
 public:
-    MateDevice(HardwareSerial9b& ser, Stream* debug = nullptr)
+    MateDeviceProtocol(HardwareSerial9b& ser, Stream* debug = nullptr)
         : MateNetPort(ser, debug)
     { }
 

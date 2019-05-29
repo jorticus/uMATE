@@ -4,17 +4,34 @@
 #include <uMate.h>
 #include <Serial9b.h>
 
-//MateController mate(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
-MateController mate(Serial9b1);
+//MateControllerProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+MateControllerProtocol mate_bus(Serial9b1);
 
 DeviceType devices[10] = { DeviceType::None };
 
 bool devicesFound = false;
 
+const char* dtypes[] = {
+    "None",
+    "Hub",
+    "FX",
+    "MX",
+    "FlexNetDC"
+};
+
+void print_dtype(DeviceType dtype) {
+    if (dtype < DeviceType::MaxDevices) {
+        Serial.print(dtypes[dtype]);
+        Serial.print(" ");
+    } else {
+        Serial.print(dtype);
+    }
+}
+
 void setup() {
     Serial.begin(9600);
 
-    mate.begin();
+    mate_bus.begin();
 
     delay(4000);
     Serial.println("Ready!");
@@ -24,21 +41,21 @@ void loop() {
     // TODO: Read device revision
     if (!devicesFound) {
         Serial.println("Scanning for MATE devices...");
-        auto root_dtype = mate.scan(0);
+        auto root_dtype = mate_bus.scan(0);
         if (root_dtype != DeviceType::None) {
             devices[0] = root_dtype;
             Serial.print("0: ");
-            Serial.print(root_dtype);
+            print_dtype(root_dtype);
             Serial.println();
 
             if (root_dtype == DeviceType::Hub) {
                 for (int i = 1; i < 10; i++) {
-                    auto dtype = mate.scan(i);
+                    auto dtype = mate_bus.scan(i);
                     if (dtype != DeviceType::None) {
                         devices[i] = dtype;
                         Serial.print(i);
                         Serial.print(": ");
-                        Serial.print(dtype);
+                        print_dtype(dtype);
                         Serial.println();
                     }
                 }

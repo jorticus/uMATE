@@ -21,7 +21,7 @@
 */
 class EmulatorDevice {
 public:
-    EmulatorDevice(MateDevice& bus, DeviceType devType) : 
+    EmulatorDevice(MateDeviceProtocol& bus, DeviceType devType) : 
         bus(bus), devType(devType)
     { }
 
@@ -97,7 +97,7 @@ public:
     virtual void log(uint16_t day) { }
 
 protected:
-    MateDevice& bus;
+    MateDeviceProtocol& bus;
     DeviceType devType;
 };
 
@@ -109,7 +109,7 @@ protected:
 */
 class MxEmulatorDevice : public EmulatorDevice {
 public:
-    MxEmulatorDevice(MateDevice& bus) 
+    MxEmulatorDevice(MateDeviceProtocol& bus) 
         : EmulatorDevice(bus, DeviceType::Mx)
     { }
 
@@ -199,7 +199,7 @@ protected:
 */
 class FxEmulatorDevice : public EmulatorDevice {
 public:
-    FxEmulatorDevice(MateDevice& bus) 
+    FxEmulatorDevice(MateDeviceProtocol& bus) 
         : EmulatorDevice(bus, DeviceType::Fx)
     { }
 
@@ -287,7 +287,7 @@ protected:
 
 class FlexNetDcDevice : public EmulatorDevice {
 public:
-    FlexNetDcDevice(MateDevice& bus) 
+    FlexNetDcDevice(MateDeviceProtocol& bus) 
         : EmulatorDevice(bus, DeviceType::FlexNetDc)
     { }
 
@@ -331,7 +331,7 @@ protected:
 */
 class HubEmulatorDevice : public EmulatorDevice {
 public:
-    HubEmulatorDevice(MateDevice& bus) 
+    HubEmulatorDevice(MateDeviceProtocol& bus) 
         : EmulatorDevice(bus, DeviceType::Hub)
     {
         for (int i = 0; i < 10; i++)
@@ -360,7 +360,7 @@ protected:
 };
 
 
-MateDevice mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+MateDeviceProtocolProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
 MxEmulatorDevice mx_device(mate_bus);
 FxEmulatorDevice fx_device(mate_bus);
 FlexNetDcDevice flexnet_device(mate_bus);

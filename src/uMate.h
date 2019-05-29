@@ -10,7 +10,7 @@
                                                (((x) & 0x0000FF00UL) << 8UL)  | (((x) & 0x000000FFUL) << 24UL))
 
 #include "MateNetPort.h"
-#include "MateController.h"
-#include "MateDevice.h"
+#include "MateControllerProtocol.h"
+#include "MateDeviceProtocol.h"
 
 #endif /* UMATE_H */

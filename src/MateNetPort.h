@@ -53,6 +53,11 @@ typedef __attribute__((packed)) struct {
 
 #define MAX_PACKET_LEN (32)
 
+/*
+    Implements the MATE framing layer.
+    There are no restrictions on what kind of packet you can send/receive,
+    so you will probably want to use a MateDeviceProtocol or MateControllerProtocol on top of this.
+*/
 class MateNetPort
 {
 public:
@@ -61,36 +66,8 @@ public:
 
     bool available();
 
-    // Query a register and retrieve its value (BLOCKING)
-    // reg:      The register address
-    // param:    Optional parameter
-    // port:     The hub port to send to
-    // returns:  The register value
-    //uint16_t query(uint16_t reg, uint16_t param = 0, uint8_t port = 0);
-
-    // Control something (BLOCKING)
-    // reg:      The control address
-    // value:    The value to use for controlling (eg. disable/enable)
-    // port:     The hub port to send to
-    //void control(uint16_t reg, uint16_t value, uint8_t port = 0);
-
-    // Scan for a device attached to the specified port (BLOCKING)
-    // port:     The port to scan, 0-10 (root: 0)
-    // returns:  The type of device that is attached
-    //DeviceType scan(uint8_t port = 0);
-
-//protected:
     void send_data(uint8_t port, uint8_t* data, uint8_t len);
     bool recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len);
-    
-    // MATE -> DEVICE
-    //void send_packet(uint8_t port, packet_t* packet);
-    //bool recv_response(OUT uint8_t* port, OUT response_t* response);
-    //bool recv_response(uint8_t* buffer, uint8_t buffer_size, OUT uint8_t* port, OUT uint8_t* recv_bytes);
-
-    // DEVICE -> MATE
-    //bool recv_packet(OUT uint8_t* port, OUT packet_t* packet);
-    //void send_response(uint8_t port, response_t* response);
 
 protected:
     Stream* debug;
@@ -99,8 +76,6 @@ protected:
     // The checksum is a simple 16-bit sum over all the bytes in the packet,
     // including the 9-bit start-of-packet byte (though the 9th bit is not counted)
     uint16_t calc_checksum(uint8_t* data, uint8_t len);
-
-    //bool recv_start_of_packet(uint8_t* sof_byte);
 
 private:
     HardwareSerial9b& ser;
