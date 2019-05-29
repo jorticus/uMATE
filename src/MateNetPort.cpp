@@ -1,6 +1,7 @@
 #include "uMate.h"
 
 #define MATENET_BAUD 9600
+#define RX_TIMEOUT 100 // ms
 
 MateNetPort::MateNetPort(HardwareSerial9b& ser, Stream* debug)
   : ser(ser), debug(debug)
@@ -62,8 +63,16 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
 
     rx_len += 3; // SOP + 2 bytes of checksum
 
+    uint32_t t1 = millis();
+
     while (ser.available())
     {
+        // Rollover-safe timeout check
+        if (((uint32_t)millis() - t1) > RX_TIMEOUT) {
+            if (debug) debug->println("RX: TIMEOUT");
+            return false;
+        }
+
         int16_t b = ser.read9b();
         if (b < 0)
             return false; // No data available yet

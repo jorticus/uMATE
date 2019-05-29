@@ -377,5 +377,9 @@ void setup() {
 }
 
 void loop() {
+    delay(100);
+
+    RXLED1;
     hub.process();
+    RXLED0;
 }
