@@ -30,6 +30,7 @@ void MateControllerProtocol::send_packet(uint8_t port, packet_t* packet)
     packet->param = SWAPENDIAN_16(packet->param);
 
     send_data(port, reinterpret_cast<uint8_t*>(packet), sizeof(packet_t));
+    delay(1); // BUGFIX: Other end gets confused if we send packets too fast...
 }
 
 
@@ -63,7 +64,7 @@ bool MateControllerProtocol::recv_response_blocking(OUT uint8_t* for_command, OU
         }
         delay(1);
     }
-    //if (debug) { debug->println("RX timeout"); }
+    if (debug) { debug->println("RX timeout"); }
     return false;
 }
 
@@ -155,13 +156,9 @@ int8_t MateControllerProtocol::find_device(DeviceType dtype)
 
 revision_t MateControllerProtocol::get_revision(uint8_t port)
 {
-    int16_t value = 0;
     revision_t rev;
-    if ((value = query(2, 0, port)) >= 0)
-        rev.a = value;
-    if ((value = query(3, 0, port)) >= 0)
-        rev.b = value;
-    if ((value = query(4, 0, port)) >= 0)
-        rev.c = value;
+    rev.a = query(2, 0, port);
+    rev.b = query(3, 0, port);
+    rev.c = query(4, 0, port);
     return rev;
 }

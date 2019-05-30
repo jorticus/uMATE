@@ -16,6 +16,7 @@ public:
     // Open a device on the specified port.
     // returns false if the device is not present on that port.
     bool begin(uint8_t port) {
+        this->port = port;
         is_open = (protocol.scan(port) == dtype);
         return is_open;
     }
@@ -37,7 +38,7 @@ public:
 
     // Read the revision from the target device
     revision_t get_revision() {
-        protocol.get_revision(this->port);
+        return protocol.get_revision(this->port);
     }
 
 protected:

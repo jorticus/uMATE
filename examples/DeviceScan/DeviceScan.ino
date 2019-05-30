@@ -11,8 +11,8 @@ public:
     { }
 };
 
-//MateControllerProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
-MateControllerProtocol mate_bus(Serial9b1);
+MateControllerProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+//MateControllerProtocol mate_bus(Serial9b1);
 
 MxDeviceController mx_device(mate_bus);
 
@@ -84,8 +84,8 @@ void loop() {
             // TODO: Revision is displayed wrong.
             auto rev = mx_device.get_revision();
             Serial.print("MX device found on port ");
-            Serial.print(port);
-            Serial.print(" Rev:");
+            Serial.println(port);
+            Serial.print("Rev: ");
             Serial.print(rev.a); Serial.print(".");
             Serial.print(rev.b); Serial.print(".");
             Serial.print(rev.c);
