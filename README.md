@@ -14,6 +14,13 @@ Simply clone to your Arduino libraries folder (eg. Documents\Arduino\libraries\u
 
 Several examples are included with this library, and were built for the Sparkfun Pro Micro:
 
+## Bridge.ino
+
+This bridges a MATEnet bus to a host computer via USB.
+
+Packets are wrapped into an HLDC-encoded frame, and can be processed by my pyMate library.
+This provides a more robust method for interfacing with the network, since Linux/Windows 
+struggles with 9-bit data.
 
 ## MXEmulator.ino
 
