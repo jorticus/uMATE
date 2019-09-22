@@ -26,21 +26,21 @@ enum PacketType {
     Log = 22
 };
 
-typedef __attribute__((packed)) struct {
+typedef struct {
     uint8_t type;
     uint16_t addr;
     uint16_t param;
-} packet_t;
+} packet_t __attribute__((packed));
 
 // typedef struct {
 //     packet_t packet;
 //     uint16_t checksum;
 // } packet_frame_t;
 
-typedef __attribute__((packed)) struct {
+typedef struct {
     //uint8_t reserved;
     uint16_t value;
-} response_t;
+} response_t __attribute__((packed));
 
 // template<typename T>
 // struct frame_s {
