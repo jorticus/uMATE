@@ -40,6 +40,27 @@ This scans the mate bus for attached devices.
 
 You can connect this with the DeviceEmulator example above, or with a real Outback MATE network with attached devices (with appropriate level conversion!)
 
+## Sniffer.ino
+
+Platform: Arduino Mega 2560 (Needs 3x Hardware Serial ports)
+
+This allows you to tap an Outback MATE bus and intercept traffic between two devices. There is a python script that forwards this captured data to Wireshark for further analysis.
+
+Unlike the other sketches, this just captures low-level packet data and does not decode them using the uMATE library.
+
+
+```
+[MATE] --------\   /-------- [MX/FX/DC]
+               |   |
+            [ Arduino ]
+                 |       
+            [ Tap.py ]
+                 |
+           [ Wireshark ]
+```
+
+You should use opto-isolators to convert the +24V serial logic of the MATE bus to +5V logic of the Arduino, and provide isolation between your analysis PC and the main system wiring.
+
 ## Footnotes
 
 Pull-requests are welcome.
