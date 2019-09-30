@@ -72,12 +72,34 @@ bool MateControllerProtocol::recv_response_blocking(OUT uint8_t* for_command, OU
     return false;
 }
 
+// int16_t MateControllerProtocol::increment(uint16_t addr, uint8_t port)
+// {
+
+// }
+// int16_t MateControllerProtocol::decrement(uint16_t addr, uint8_t port)
+// {
+
+// }
+// int16_t MateControllerProtocol::disable(uint16_t addr, uint8_t port)
+// {
+
+// }
+// int16_t MateControllerProtocol::enable(uint16_t addr, uint8_t port)
+// {
+
+// }
+
 int16_t MateControllerProtocol::query(uint16_t reg, uint16_t param, uint8_t port)
+{
+    return read(reg, param, port);
+}
+
+int16_t MateControllerProtocol::read(uint16_t addr, uint16_t param, uint8_t port)
 {
     packet_t packet;
     //packet.port = port;
-    packet.type = PacketType::Query;
-    packet.addr = reg;
+    packet.type = PacketType::Read;
+    packet.addr = addr;
     packet.param = param;
 
     send_packet(port, &packet);
@@ -94,9 +116,14 @@ int16_t MateControllerProtocol::query(uint16_t reg, uint16_t param, uint8_t port
 
 bool MateControllerProtocol::control(uint16_t reg, uint16_t value, uint8_t port)
 {
+    return write(reg, value, port);
+}
+
+bool MateControllerProtocol::write(uint16_t addr, uint16_t value, uint8_t port)
+{
     packet_t packet;
-    packet.type = PacketType::Control;
-    packet.addr = reg;
+    packet.type = PacketType::Write;
+    packet.addr = addr;
     packet.param = value;
     
     send_packet(port, &packet);

@@ -20,8 +20,10 @@ enum DeviceType {
 };
 
 enum PacketType {
-    Query = 2,
-    Control = 3,
+    Decrement = 0,
+    Increment = 1,
+    Read = 2,
+    Write = 3,
     Status = 4,
     Log = 22
 };

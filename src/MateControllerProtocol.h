@@ -68,12 +68,22 @@ public:
     bool recv_response(OUT uint8_t* for_command, OUT response_t* response);
     bool recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response);
 
+    // Increment/Decrement or Enable/Disable a register
+    // addr:    The register address
+    // port:    The hub port to send to
+    // returns: The updated value of the register
+    // int16_t increment(uint16_t addr, uint8_t port);
+    // int16_t decrement(uint16_t addr, uint8_t port);
+    // int16_t disable(uint16_t addr, uint8_t port);
+    // int16_t enable(uint16_t addr, uint8_t port);
+
     // Query a register and retrieve its value (BLOCKING)
     // reg:      The register address
     // param:    Optional parameter
     // port:     The hub port to send to
     // returns:  The register value, or -1 if no response
     int16_t query(uint16_t reg, uint16_t param = 0, uint8_t port = 0);
+    int16_t read(uint16_t addr, uint16_t param = 0, uint8_t port = 0);
 
     // Control something (BLOCKING)
     // reg:      The control address
@@ -81,6 +91,7 @@ public:
     // port:     The hub port to send to
     // returns:  true if control was successfully activated
     bool control(uint16_t reg, uint16_t value, uint8_t port = 0);
+    bool write(uint16_t addr, uint16_t value, uint8_t port = 0);
 
 
     // Scan for a device attached to the specified port

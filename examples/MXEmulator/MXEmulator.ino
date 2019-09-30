@@ -38,8 +38,10 @@ void loop() {
         Serial.print("  port:  "); Serial.println(dest_port);
         Serial.print("  type:  "); Serial.print(packet.type, 16);
         switch (packet.type) {
-            case PacketType::Control: Serial.print(" (control)"); break;
-            case PacketType::Query:   Serial.print(" (query)"); break;
+            case PacketType::Increment: Serial.print(" (inc/en)"); break;
+            case PacketType::Decrement: Serial.print(" (dec/dis)"); break;
+            case PacketType::Write:   Serial.print(" (write)"); break;
+            case PacketType::Read:    Serial.print(" (read)"); break;
             case PacketType::Status:  Serial.print(" (status)"); break;
             case PacketType::Log:     Serial.print(" (log)"); break;
         }
@@ -50,13 +52,13 @@ void loop() {
         response.value = 0x0000;
 
         switch (packet.type) {
-            case PacketType::Query:
+            case PacketType::Read:
                 response.value = query(packet.addr);
                 // Always respond, even if we can't handle this address
                 mate_bus.send_response(0x03, &response);
                 break;
 
-            case PacketType::Control:
+            case PacketType::Write:
                 control(packet);
                 // Always respond, even if we didn't do anything
                 mate_bus.send_response(0x03, &response);
