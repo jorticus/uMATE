@@ -74,6 +74,9 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uin
             return CommsStatus::Timeout;
         }
 
+        // Allow time for one byte to be received
+        delayMicroseconds(800*2);
+        
         int16_t b = ser.read9b();
         if (b < 0) {
             return CommsStatus::NoData; // No data available yet
