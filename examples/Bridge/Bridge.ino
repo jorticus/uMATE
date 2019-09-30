@@ -62,8 +62,7 @@ void loop() {
     pjon_bus.update();
 
     // Incoming data from Outback Device
-    if (mate_bus_a.available())
-    {
+    if (mate_bus_a.available()) {
         auto err = mate_bus_a.recv_data(&port, &buffer[1], &buffer_len);
         if (err == CommsStatus::Success) {
             buffer[0] = port;
@@ -87,19 +86,29 @@ void loop() {
 
 #ifdef HAVE_HWSERIAL2
     // Incoming data from Outback MATE
-    // if (mate_bus_b.available() && 
-    //     mate_bus_b.recv_data(&port, &buffer[1], &buffer_len))
-    // {
-    //     buffer[0] = port;
+    buffer_len = 50;
+    if (mate_bus_b.available()) {
+        auto err = mate_bus_b.recv_data(&port, &buffer[1], &buffer_len);
+        if (err == CommsStatus::Success) {
+            buffer[0] = port;
 
-    //     // Forward to USB Serial
-    //     uint8_t target_id = 0; // Broadcast
-    //     pjon_bus.send_packet(
-    //         target_id,
-    //         buffer,
-    //         buffer_len
-    //     );
-    // }
+            // Forward to USB Serial
+            uint8_t target_id = 0; // Broadcast
+            pjon_bus.send_packet(
+                target_id,
+                buffer,
+                buffer_len+1
+            );
+        } else {
+            if (err != CommsStatus::NoData) {
+                buffer[0] = (uint8_t)err;
+                pjon_bus.send_packet(
+                    target_id,
+                    buffer, 1
+                );
+            }
+        }
+    }
 #endif
 
     //pjon_bus.send_packet(0, "HELLO\r\n", 7);
