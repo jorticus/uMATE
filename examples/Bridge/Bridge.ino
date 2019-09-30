@@ -28,8 +28,6 @@ void setup() {
     pjon_bus.set_receiver(receiver_function);
     pjon_bus.strategy.set_serial(&Serial);
     pjon_bus.begin();
-
-    delay(4000);
 }
 
 void loop() {
@@ -63,7 +61,7 @@ void loop() {
 
 void receiver_function(uint8_t* payload, uint16_t length, const PJON_Packet_Info &packet_info) {
     // Forward the packet into the MATEnet bus
-    if (length >= MATE_RESP_LEN) {
+    if (length >= 2) {
         uint8_t port        = payload[0];
         uint8_t *packet     = &payload[1];
         mate_bus.send_data(port, packet, length-1);
