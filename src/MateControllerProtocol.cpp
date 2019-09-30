@@ -42,8 +42,8 @@ bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT respons
     // NOTE: This is only valid for commands 0-3.
     // Other commands may return more than sizeof(response_t) bytes...
     uint8_t len = sizeof(response_t);
-    bool received = recv_data(for_command, reinterpret_cast<uint8_t*>(response), &len);
-    if (received && (len == sizeof(response_t))) {
+    auto err = recv_data(for_command, reinterpret_cast<uint8_t*>(response), &len);
+    if ((err == CommsStatus::Success) && (len == sizeof(response_t))) {
         // port is actually the command we're responding to, plus an error flag in bit7
         uint8_t c = *for_command;
         if (c & 0x80) {
@@ -55,8 +55,9 @@ bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT respons
         }
 
         response->value = SWAPENDIAN_16(response->value);
+        return true;
     }
-    return received;
+    return false;
 }
 
 bool MateControllerProtocol::recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response)

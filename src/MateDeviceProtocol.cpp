@@ -9,13 +9,14 @@ bool MateDeviceProtocol::recv_packet(OUT uint8_t* port, OUT packet_t* packet)
 
     // Packets from a MATE are always sizeof(packet_t)
     uint8_t len = sizeof(packet_t);
-    bool received = recv_data(port, reinterpret_cast<uint8_t*>(packet), &len);
-    if (received && (len == sizeof(packet_t))) {
+    auto err = recv_data(port, reinterpret_cast<uint8_t*>(packet), &len);
+    if ((err == CommsStatus::Success) && (len == sizeof(packet_t))) {
         // AVR is little-endian, but protocol is big-endian. Must swap bytes...
         packet->addr = SWAPENDIAN_16(packet->addr);
         packet->param = SWAPENDIAN_16(packet->param);
+        return true;
     }
-    return received;
+    return false;
 }
 
 // Sends a response back to an attached MATE

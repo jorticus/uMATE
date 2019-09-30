@@ -55,7 +55,7 @@ bool MateNetPort::available()
     return (ser.available());
 }
 
-bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len)
+CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len)
 {
     // Maximum number of RX bytes
     // (SOP + 2 bytes of checksum + data[] buffer length)
@@ -64,26 +64,26 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* l
     uint32_t t1 = millis();
 
     if (!ser.available())
-        return false; // No data available yet
+        return CommsStatus::NoData; // No data available yet
 
     while (true)
     {
         // Rollover-safe timeout check
         if (((uint32_t)millis() - t1) > RX_TIMEOUT) {
             if (debug) debug->println("RX: TIMEOUT");
-            return false;
+            return CommsStatus::Timeout;
         }
 
         int16_t b = ser.read9b();
         if (b < 0) {
-            return false; // No data available yet
+            return CommsStatus::NoData; // No data available yet
         }
         
         // Looking for start of packet (bit9)
         if (rx_idx == 0) {
             if (!(b & BIT9)) {
                 rx_idx = 0;
-                return false; // No start of packet found yet
+                return CommsStatus::NoStartOfPacketFound; // No start of packet found yet
             }
             b &= 0x0FF;
         }
@@ -102,7 +102,7 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* l
         if (rx_idx > sizeof(rx_buffer)) {
             // Out of buffer, reset.
             rx_idx = 0;
-            return false;
+            return CommsStatus::BufferOverrun;
         }
 
         rx_buffer[rx_idx++] = b;
@@ -113,7 +113,7 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* l
         // To do this we assume that if no data is available, the packet is complete.
         if (!ser.available() || (rx_idx >= max_rx_len)) {
             if (rx_idx < 3)
-                return false; // Not enough data received
+                return CommsStatus::InsufficientData; // Not enough data received
 
             if (debug) debug->println("RX: EOP");
             
@@ -160,10 +160,10 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* l
                     debug->print(" Act:");
                     debug->println(checksum_actual, 16);
                 }
-                return false;
+                return CommsStatus::BadChecksum;
             }
 
-            return true; // Packet fully received!
+            return CommsStatus::Success; // Packet fully received!
         }
     }
 }

@@ -53,6 +53,16 @@ typedef struct {
 
 #define MAX_PACKET_LEN (32)
 
+enum CommsStatus {
+    Success = 0,
+    NoData,
+    Timeout,
+    NoStartOfPacketFound,
+    BufferOverrun,
+    InsufficientData,
+    BadChecksum
+};
+
 /*
     Implements the MATE framing layer.
     There are no restrictions on what kind of packet you can send/receive,
@@ -67,7 +77,7 @@ public:
     bool available();
 
     void send_data(uint8_t port, uint8_t* data, uint8_t len);
-    bool recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len);
+    CommsStatus recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len);
 
 protected:
     Stream* debug;
