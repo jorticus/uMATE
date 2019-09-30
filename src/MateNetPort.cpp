@@ -55,17 +55,18 @@ bool MateNetPort::available()
     return (ser.available());
 }
 
-bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
+bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len)
 {
-    uint8_t rx_len = len;
-    if (rx_len == 0)
-        return true; // Fully received 0 bytes
-
-    rx_len += 3; // SOP + 2 bytes of checksum
+    // Maximum number of RX bytes
+    // (SOP + 2 bytes of checksum + data[] buffer length)
+    uint8_t max_rx_len = (*len) + 3; 
 
     uint32_t t1 = millis();
 
-    while (ser.available())
+    if (!ser.available())
+        return false; // No data available yet
+
+    while (true)
     {
         // Rollover-safe timeout check
         if (((uint32_t)millis() - t1) > RX_TIMEOUT) {
@@ -74,20 +75,9 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
         }
 
         int16_t b = ser.read9b();
-        if (b < 0)
+        if (b < 0) {
             return false; // No data available yet
-
-        /*if (debug) {
-            debug->print("RX: ");
-            debug->print(b, 16);
-            debug->print(" ");
-            debug->print(rx_idx);
-            debug->print(" ");
-            debug->print(rx_len);
-            debug->print(" ");
-            debug->print((b & BIT9) ? 1 : 0);
-            debug->println();
-        }*/
+        }
         
         // Looking for start of packet (bit9)
         if (rx_idx == 0) {
@@ -117,24 +107,40 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
 
         rx_buffer[rx_idx++] = b;
 
-        if (rx_idx >= rx_len) { // len guaranteed to be >= 1
+        // NOTE: This makes the assumption that bytes are received back-to-back.
+        // The Outback products actually seem to know the correct size of each packet/response,
+        // but to make this library more flexible we need to find the end of a packet without knowing it's size.
+        // To do this we assume that if no data is available, the packet is complete.
+        if (!ser.available() || (rx_idx >= max_rx_len)) {
+            if (rx_idx < 3)
+                return false; // Not enough data received
+
+            if (debug) debug->println("RX: EOP");
+            
+            // The first byte is either the port or the response command / error indicator
             if (port != nullptr) {
                 *port = rx_buffer[0];
             }
-            for (int i = 0; i < len; i++) {
+
+            // Checksum is always contained in the last two bytes
+            uint16_t checksum = (rx_buffer[rx_idx-2] << 8) | rx_buffer[rx_idx-1];
+
+            // Payload is between the SOP & checksum
+            // rx_idx is guaranteed to have more than 3 but not more than len+3 bytes.
+            *len = rx_idx - 3;
+            for (int i = 0; i < (*len); i++) {
                 data[i] = rx_buffer[i+1];
             }
-            uint16_t checksum = (rx_buffer[rx_idx-2] << 8) | rx_buffer[rx_idx-1];
-            rx_idx = 0;
 
             if (debug) {
                 debug->print("RX[");
                 debug->print(*port);
                 debug->print("] ");
-                for (int i = 0; i < len; i++) {
+                for (int i = 0; i < (*len); i++) {
                     debug->print(data[i], 16);
                     debug->print(" ");
                 }
+            
                 debug->print(" C:");
                 debug->print(checksum, 16);
                 debug->println();
@@ -143,7 +149,9 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
             // Validate checksum
             uint16_t checksum_actual = 
                 (uint16_t)*port +
-                calc_checksum(data, len);
+                calc_checksum(data, (*len));
+
+            rx_idx = 0;
             
             if (checksum != checksum_actual) {
                 if (debug) {
@@ -158,7 +166,6 @@ bool MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len)
             return true; // Packet fully received!
         }
     }
-    return false; // Have not yet received 'len' bytes
 }
 
 uint16_t MateNetPort::calc_checksum(uint8_t* data, uint8_t len)

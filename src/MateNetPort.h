@@ -67,7 +67,7 @@ public:
     bool available();
 
     void send_data(uint8_t port, uint8_t* data, uint8_t len);
-    bool recv_data(OUT uint8_t* port, OUT uint8_t* data, uint8_t len);
+    bool recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len);
 
 protected:
     Stream* debug;
