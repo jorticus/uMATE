@@ -22,6 +22,10 @@ import errno
 
 # https://wiki.wireshark.org/CaptureSetup/Pipes
 
+    
+if sys.version_info < (3,):
+    raise Exception('Python 3 required')
+
 if len(sys.argv) < 2:
     print("Usage:")
     print(os.path.basename(sys.argv[0]) + " COM1")
@@ -36,7 +40,12 @@ WIRESHARK_PATH = r'C:\Program Files\Wireshark\Wireshark.exe'
 WIRESHARK_PIPE = r'\\.\pipe\wireshark-mate'
 WIRESHARK_DLT  = 147 # DLT_USER0
 
-PIPE_CONNECT_TIMEOUT = 20000 # millisec
+LUA_SCRIPT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mate_dissector.lua')
+
+if not os.path.exists(LUA_SCRIPT_PATH):
+    raise Exception('mate_dissector.lua not found: ' + LUA_SCRIPT_PATH)
+
+PIPE_CONNECT_TIMEOUT = 30000 # millisec
 
 BUS_A = 'A'
 BUS_B = 'B'
@@ -77,7 +86,7 @@ def connect_pipe(pipe, timeoutMillisec = 1000):
 def write_pipe(pipe, buf):
     try:
         # WINDOWS:
-        win32file.WriteFile(pipe, buf)
+        win32file.WriteFile(pipe, bytes(buf))
         # UNIX:
         #pipe.write(buf)
     except OSError as e:
@@ -93,7 +102,13 @@ def main():
 
         if WIRESHARK_LAUNCH:
             #open Wireshark, configure pipe interface and start capture (not mandatory, you can also do this manually)
-            wireshark_cmd=[WIRESHARK_PATH, '-i'+WIRESHARK_PIPE,'-k']
+            wireshark_cmd=[
+                WIRESHARK_PATH, 
+                '-i'+WIRESHARK_PIPE,
+                '-k',
+                '-o','capture.no_interface_load:TRUE',
+                '-X','lua_script:'+LUA_SCRIPT_PATH
+            ]
             proc=subprocess.Popen(wireshark_cmd)
 
         # Create named pipe
@@ -128,7 +143,7 @@ def main():
                     ln = s.readline()
                     if ln:
                         ln = ln.decode('ascii', 'ignore').strip()
-                    if ln:
+                    if ln and ':' in ln:
                         print(ln)
                         bus, rest = ln.split(': ')
                         payload = [int(h, 16) for h in rest.split(' ')]

@@ -118,11 +118,16 @@ function mate_proto.dissector(buffer, pinfo, tree)
     -- end
 
     -- MATE TX (Command)
-    if bus == 10 then
-        pinfo.cols.src = "MATE"
-        
+    if bus == 0xA then
+		pinfo.cols.src = "MATE"
+        pinfo.cols.dst = "Device"
+		
         --pinfo.cols.info:set("MATE Command")
         local subtree = tree:add(mate_proto, buffer(), "MATE TX")
+		
+		if buffer:len() <= 7 then
+			return
+		end
 
         port = buffer(0, 1)
         cmd  = buffer(1, 1)
@@ -140,7 +145,7 @@ function mate_proto.dissector(buffer, pinfo, tree)
             pinfo.cols.info:prepend(info .. " ")
         end
 
-        if cmd:uint() <= 3 then
+        if cmd:uint() <= 4 then
             subtree:add(pf.query_addr, addr)
             info = query_registers[addr:uint()]
             if info then
@@ -155,7 +160,7 @@ function mate_proto.dissector(buffer, pinfo, tree)
         subtree:add(pf.value, value)
         subtree:add(pf.check, check)
 
-        pinfo.cols.dst = "Port " .. port
+        pinfo.cols.src = "Port " .. port
 
     -- MATE RX (Response)
     elseif bus == 0xB then
@@ -163,18 +168,23 @@ function mate_proto.dissector(buffer, pinfo, tree)
         pinfo.cols.dst = "MATE"
         local subtree = tree:add(mate_proto, buffer(), "MATE RX")
 
-        cmd = buffer(0, 1)
-        data = buffer(1, buffer:len()-3)
-        check = buffer(buffer:len()-2, 2)
-        subtree:add(pf.cmd, cmd)
-        subtree:add(pf.data, data)
-        subtree:add(pf.check, check)
-
-        pinfo.cols.info:set("Response")
-        info = commands[cmd:uint()]
-        if info then
-            pinfo.cols.info:prepend(info .. " ")
-        end
+		if buffer:len() <= 3 then
+			return
+		end
+		
+		cmd = buffer(0, 1)
+		subtree:add(pf.cmd, cmd)
+	
+		data = buffer(1, buffer:len()-3)
+		check = buffer(buffer:len()-2, 2)
+		subtree:add(pf.data, data)
+		subtree:add(pf.check, check)
+	
+		pinfo.cols.info:set("Response")
+		info = commands[cmd:uint()]
+		if info then
+			pinfo.cols.info:prepend(info .. " ")
+		end
     end
 end
 
