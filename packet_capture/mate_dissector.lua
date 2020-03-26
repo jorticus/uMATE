@@ -3,8 +3,8 @@ DissectorTable.new("matenet")
 mate_proto = Proto("matenet", "Outback MATE serial protocol")
 
 local commands = {
-    [0] = "Dec/Dis",
-    [1] = "Inc/En",
+    [0] = "Inc/Dis",  -- Increment or Disable (depending on the register)
+    [1] = "Dec/En",   -- Decrement or Enable
     [2] = "Read",
     [3] = "Write",
     [4] = "Status",
@@ -13,8 +13,8 @@ local commands = {
 
 local query_registers = {
     -- MX/FX (Not DC)
-    -- [0x0000] = "Device ID",
-    -- [0x0001] = "FW Revision",
+    [0x0000] = "Device ID",
+    [0x0001] = "FW Revision",
 
     -- FX
     -- [0x0039] = "Errors",
@@ -62,21 +62,6 @@ local query_registers = {
     -- [0x01C9] = "Aux Relay Mode",
     -- [0x0170] = "Setpoint Absorb",
     -- [0x0172] = "Setpont Float",
-
-    -- DC
-    --[0x0064] = "",
-    --[0x4004] = "",
-    --[0x0044] = "",
-    --[0x002a]
-    --[0x003a]
-    --[0x0024]
-    --[0x0046]
-    --[0x0040]
-    --[0x0026]
-    --[0x0048]
-    --[0x002e]
-    --[0x0064]
-    --[0x4005]
 }
 
 local pf = {
