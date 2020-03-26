@@ -36,6 +36,8 @@ COM_BAUD = 115200
 
 WIRESHARK_LAUNCH = True
 
+COMBINE_CMD_RESPONSE = True
+
 WIRESHARK_PATH = r'C:\Program Files\Wireshark\Wireshark.exe'
 WIRESHARK_PIPE = r'\\.\pipe\wireshark-mate'
 WIRESHARK_DLT  = 147 # DLT_USER0
@@ -94,6 +96,40 @@ def write_pipe(pipe, buf):
         if e.errno == errno.SIGPIPE:
             return False
     return True
+    
+def send_frame(pipe, bus, data):
+    # send pcap packet through the pipe
+    now = datetime.now()
+    timestamp = int(time.mktime(now.timetuple()))
+    pcap_header = struct.pack("=iiiiB",
+        timestamp,        # timestamp seconds
+        now.microsecond,  # timestamp microseconds
+        len(data)+1,        # number of octets of packet saved in file
+        len(data)+1,        # actual length of packet
+        bus
+    )
+    if not write_pipe(pipe, pcap_header + bytes(data)):
+        return
+    
+def send_combined_frames(pipe, busa, busb):
+    if not busa: busa = []
+    if not busb: busb = []
+    
+    data = struct.pack("=BBB", 0x0F, len(busa), len(busb))
+    data += bytes(busa)
+    data += bytes(busb)
+
+    # send pcap packet through the pipe
+    now = datetime.now()
+    timestamp = int(time.mktime(now.timetuple()))
+    pcap_header = struct.pack("=iiii",
+        timestamp,        # timestamp seconds
+        now.microsecond,  # timestamp microseconds
+        len(data),        # number of octets of packet saved in file
+        len(data),        # actual length of packet
+    )
+    if not write_pipe(pipe, pcap_header + bytes(data)):
+        return
 
 def main():
 
@@ -136,6 +172,9 @@ def main():
             s.timeout = 1.0 # seconds
 
             print("Serial port opened, listening for MateNET data...")
+            
+            prev_bus = None
+            prev_packet = None
 
             while True:
                 s.timeout = END_OF_PACKET_TIMEOUT
@@ -147,9 +186,10 @@ def main():
                         print(ln)
                         bus, rest = ln.split(': ')
                         payload = [int(h, 16) for h in rest.split(' ')]
-
-                        # Encode the bus identifier as hex (0xA or 0xB)
-                        data = bytes([int(bus, 16)])
+                       
+                        
+                        #data = bytes([int(bus, 16)])
+                        data = bytes([])
 
                         if len(payload) > 2:
                             if (payload[0] & 0x100) == 0:
@@ -173,17 +213,43 @@ def main():
                         #print(' '.join('%.2x' % c for c in data))
 
                         # Send PCAP packet through the pipe
-                        now = datetime.now()
-                        timestamp = int(time.mktime(now.timetuple()))
-                        pcap_header = struct.pack("=IIII",
-                            timestamp,        # timestamp seconds
-                            now.microsecond,  # timestamp microseconds
-                            len(data),        # number of octets of packet saved in file
-                            len(data),        # actual length of packet
-                        )
-                        if not write_pipe(pipe, pcap_header + bytes(data)):
-                            return
-
+                        #now = datetime.now()
+                        #timestamp = int(time.mktime(now.timetuple()))
+                        #pcap_header = struct.pack("=IIII",
+                        #    timestamp,        # timestamp seconds
+                        #    now.microsecond,  # timestamp microseconds
+                        #    len(data),        # number of octets of packet saved in file
+                        #    len(data),        # actual length of packet
+                        #)
+                        #if not write_pipe(pipe, pcap_header + bytes(data)):
+                        #    return
+                        
+                        if COMBINE_CMD_RESPONSE:
+                            
+                            if bus == 'A':
+                                if prev_bus == 'A':
+                                    # Previous frame was from the same bus, better
+                                    # send this to wireshark even though it has 
+                                    # no corresponding frame from bus B
+                                    #send_combined_frames(pipe, prev_pkt, None)
+                                    send_frame(pipe, 0xA, prev_pkt)
+                                    
+                                # Store packet until we receive a frame from B
+                                prev_bus = 'A'
+                                prev_pkt = data
+                                
+                            elif bus == 'B':
+                                # Combine packet from A & B
+                                send_combined_frames(pipe, prev_pkt, data)
+                                
+                                prev_pkt = None
+                                prev_bus = 'B'
+                                
+                        else:
+                            # Encode the bus identifier as hex (0xA or 0xB)
+                            busid = int(bus,16)
+                            send_frame(pipe, busid, data)
+                            
                 except ValueError as e:
                     raise
                     continue

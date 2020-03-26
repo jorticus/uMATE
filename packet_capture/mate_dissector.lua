@@ -95,35 +95,15 @@ mate_proto.fields = pf
 --local ef_too_short = ProtoExpert.new("mate.too_short.expert", "MATE packet too short",
 --                                    expert.group.MALFORMED, expert.severity.ERROR)
 
-function mate_proto.dissector(buffer, pinfo, tree)
-    len = buffer:len()
-    if len == 0 then return end
-
-    pinfo.cols.protocol = mate_proto.name
-
-    --local subtree = tree:add(mate_proto, buffer(), "MATE Data")
-
-    -- if len < 5 then
-    --     subtree.add_proto_expert_info(ef_too_short)
-    --     return
-    -- end
-
-    bus = buffer(0, 1):uint()
-    --subtree:add(pf.bus, bus)
-    buffer = buffer(1, buffer:len()-1)
-
-    -- local data = {}
-    -- for i=0,buffer:len() do
-    --     data[i] = i
-    -- end
-
+function dissect_frame(bus, buffer, pinfo, tree, combine)
     -- MATE TX (Command)
     if bus == 0xA then
-		pinfo.cols.src = "MATE"
-        pinfo.cols.dst = "Device"
+		if not combine then
+			pinfo.cols.src = "MATE"
+			pinfo.cols.dst = "Device"
+		end
 		
-        --pinfo.cols.info:set("MATE Command")
-        local subtree = tree:add(mate_proto, buffer(), "MATE TX")
+		local subtree = tree:add(mate_proto, buffer(), "Command")
 		
 		if buffer:len() <= 7 then
 			return
@@ -161,12 +141,17 @@ function mate_proto.dissector(buffer, pinfo, tree)
         subtree:add(pf.check, check)
 
         pinfo.cols.src = "Port " .. port
-
+		
+		return -1
+		
     -- MATE RX (Response)
     elseif bus == 0xB then
-        pinfo.cols.src = "Device"
-        pinfo.cols.dst = "MATE"
-        local subtree = tree:add(mate_proto, buffer(), "MATE RX")
+		if not combine then
+			pinfo.cols.src = "Device"
+			pinfo.cols.dst = "MATE"
+		end
+		
+		local subtree = tree:add(mate_proto, buffer(), "Response")
 
 		if buffer:len() <= 3 then
 			return
@@ -180,12 +165,58 @@ function mate_proto.dissector(buffer, pinfo, tree)
 		subtree:add(pf.data, data)
 		subtree:add(pf.check, check)
 	
-		pinfo.cols.info:set("Response")
-		info = commands[cmd:uint()]
-		if info then
-			pinfo.cols.info:prepend(info .. " ")
+		if not combine then
+			pinfo.cols.info:set("Response")
+			info = commands[cmd:uint()]
+			if info then
+				pinfo.cols.info:prepend(info .. " ")
+			end
 		end
     end
+end
+
+function mate_proto.dissector(buffer, pinfo, tree)
+    len = buffer:len()
+    if len == 0 then return end
+
+    pinfo.cols.protocol = mate_proto.name
+
+    --local subtree = tree:add(mate_proto, buffer(), "MATE Data")
+
+    -- if len < 5 then
+    --     subtree.add_proto_expert_info(ef_too_short)
+    --     return
+    -- end
+
+    bus = buffer(0, 1):uint()
+    --subtree:add(pf.bus, bus)
+    buffer = buffer(1, buffer:len()-1)
+
+    -- local data = {}
+    -- for i=0,buffer:len() do
+    --     data[i] = i
+    -- end
+	
+	-- Combined RX/TX
+	if bus == 0x0F then
+		len_a = buffer(0, 1):uint()
+		len_b = buffer(1, 1):uint()
+		
+		buf_a = buffer(2, len_a)
+		buf_b = buffer(2+len_a, len_b)
+		
+		r_a = dissect_frame(0xA, buf_a, pinfo, tree, true)
+		r_b = dissect_frame(0xB, buf_b, pinfo, tree, true)
+		--return r_a + r_b
+		
+		--pinfo.cols.src = "MATE"
+		pinfo.cols.dst = "Device"
+		
+	else
+		return dissect_frame(bus, buffer, pinfo, tree, false)
+	end
+
+
 end
 
 DissectorTable.get("matenet"):add(147, mate_proto) -- DLT_USER0
