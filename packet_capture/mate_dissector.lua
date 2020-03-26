@@ -129,9 +129,9 @@ function dissect_frame(bus, buffer, pinfo, tree, combine)
             subtree:add(pf.query_addr, addr)
             info = query_registers[addr:uint()]
             if info then
-                pinfo.cols.info:append(": " .. info)
+                pinfo.cols.info:append(" ["..info.."]")
             else
-                pinfo.cols.info:append(": " .. addr)
+                pinfo.cols.info:append(" ["..addr.."]")
             end
         else
             subtree:add(pf.addr, addr)
@@ -140,7 +140,7 @@ function dissect_frame(bus, buffer, pinfo, tree, combine)
         subtree:add(pf.value, value)
         subtree:add(pf.check, check)
 
-        pinfo.cols.src = "Port " .. port
+        pinfo.cols.dst = "Port " .. port
 		
 		return -1
 		
@@ -170,6 +170,11 @@ function dissect_frame(bus, buffer, pinfo, tree, combine)
 			info = commands[cmd:uint()]
 			if info then
 				pinfo.cols.info:prepend(info .. " ")
+			end
+		else
+			-- append the response value
+			if cmd:uint() <= 3 then
+				pinfo.cols.info:append(" : " .. data)
 			end
 		end
     end
@@ -209,8 +214,8 @@ function mate_proto.dissector(buffer, pinfo, tree)
 		r_b = dissect_frame(0xB, buf_b, pinfo, tree, true)
 		--return r_a + r_b
 		
-		--pinfo.cols.src = "MATE"
-		pinfo.cols.dst = "Device"
+		pinfo.cols.src = "MATE"
+		--pinfo.cols.dst = "Device"
 		
 	else
 		return dissect_frame(bus, buffer, pinfo, tree, false)
