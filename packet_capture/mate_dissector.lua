@@ -57,6 +57,26 @@ local MX_AUX_MODE = {
     [10] = "Low Battery"
 }
 
+local FX_OPERATIONAL_MODE = {
+    [0] = "Inverter Off",
+    [1] = "Inverter Search",
+    [2] = "Inverter On",
+    [3] = "Charge",
+    [4] = "Silent",
+    [5] = "Float",
+    [6] = "Equalize",
+    [7] = "Charger Off",
+    [8] = "Support AC",          -- FX is drawing power from batteries to support AC
+    [9] = "Sell Enabled",     -- FX is exporting more power than the loads are drawing
+    [10] = "Pass Through",       -- FX converter is off, passing through line AC
+}
+
+local FX_AC_MODE = {
+    [0] = "No AC",
+    [1] = "AC Drop",
+    [2] = "AC Use",
+}
+
 local QUERY_REGISTERS = {
     -- MX/FX (Not DC)
     [0x0000] = "Device Type",
@@ -123,7 +143,7 @@ local pf = {
     device_type             = ProtoField.uint8("matenet.device_type", "Device Type", base.HEX, DEVICE_TYPES_SHORT),
     data                    = ProtoField.bytes("matenet.data", "Data", base.NONE),
     addr                    = ProtoField.uint16("matenet.addr", "Address", base.HEX),
-    query_addr              = ProtoField.uint16("matenet.queryaddr", "Address", base.HEX, QUERY_REGISTERS),
+    reg_addr                = ProtoField.uint16("matenet.register", "Register", base.HEX, QUERY_REGISTERS),
     value                   = ProtoField.uint16("matenet.value", "Value", base.HEX),
     check                   = ProtoField.uint16("matenet.checksum", "Checksum", base.HEX),
 
@@ -141,18 +161,17 @@ local pf = {
     mxstatus_errors_2       = ProtoField.uint8("matenet.mxstatus.errors.e2",    "Too Hot",          base.DEC, NULL, 64),
     mxstatus_errors_3       = ProtoField.uint8("matenet.mxstatus.errors.e1",    "Shorted Battery Sensor", base.DEC, NULL, 32),
 
-    fxstatus_misc           = ProtoField.uint8("matenet.fxstatus.flags",        "Flags", base.DEC),
-    fxstatus_is_230v        = ProtoField.uint8("matenet.fxstatus.misc.is_230v", "Is 230V", base.DEC, NULL, 0x01),
-    fxstatus_aux_on         = ProtoField.uint8("matenet.fxstatus.misc.aux_on",  "Aux On", base.DEC, NULL, 0x80),
-    fxstatus_warnings       = ProtoField.uint8("matenet.fxstatus.warnings",     "Warnings", base.DEC),
-    fxstatus_error          = ProtoField.uint8("matenet.fxstatus.error",        "Error Mode", base.DEC),
-    fxstatus_ac_mode        = ProtoField.uint8("matenet.fxstatus.ac_mode",      "AC Mode", base.DEC),
-    fxstatus_op_mode        = ProtoField.uint8("matenet.fxstatus.op_mode",      "Operational Mode", base.DEC),
-
+    fxstatus_misc           = ProtoField.uint8("matenet.fxstatus.flags",        "Flags",                base.DEC),
+    fxstatus_is_230v        = ProtoField.uint8("matenet.fxstatus.misc.is_230v", "Is 230V",              base.DEC, NULL, 0x01),
+    fxstatus_aux_on         = ProtoField.uint8("matenet.fxstatus.misc.aux_on",  "Aux On",               base.DEC, NULL, 0x80),
+    fxstatus_warnings       = ProtoField.uint8("matenet.fxstatus.warnings",     "Warnings",             base.DEC),
+    fxstatus_errors         = ProtoField.uint8("matenet.fxstatus.errors",       "Errors",               base.DEC),
+    fxstatus_ac_mode        = ProtoField.uint8("matenet.fxstatus.ac_mode",      "AC Mode",              base.DEC, FX_AC_MODE),
+    fxstatus_op_mode        = ProtoField.uint8("matenet.fxstatus.op_mode",      "Operational Mode",     base.DEC, FX_OPERATIONAL_MODE),
     fxstatus_inv_current    = ProtoField.float("matenet.fxstatus.inv_current",  "Inverter Current",     {"A"}),
     fxstatus_out_voltage    = ProtoField.float("matenet.fxstatus.out_voltage",  "Out Voltage",          {"V"}),
-    fxstatus_in_voltage     = ProtoField.float("matenet.fxstatus.in_voltage",  "In Voltage",            {"V"}),
-    fxstatus_sell_current   = ProtoField.float("matenet.fxstatus.sell_current",  "Sell Current",        {"A"}),
+    fxstatus_in_voltage     = ProtoField.float("matenet.fxstatus.in_voltage",   "In Voltage",           {"V"}),
+    fxstatus_sell_current   = ProtoField.float("matenet.fxstatus.sell_current", "Sell Current",         {"A"}),
     fxstatus_chg_current    = ProtoField.float("matenet.fxstatus.chg_current",  "Charge Current",       {"A"}),
     fxstatus_buy_current    = ProtoField.float("matenet.fxstatus.buy_current",  "Buy Current",          {"A"}),
     fxstatus_bat_voltage    = ProtoField.float("matenet.fxstatus.bat_voltage",  "Battery Voltage",      {"V"}),
@@ -254,19 +273,19 @@ function parse_mx_status(addr, data, tree)
     tree:add(data(5,1), "Unknown Field:", data(5,1):uint()) 
 
     -- TODO: Aux Mode
-    --tree:add(pf.mxstatus_aux_state, data(0,1))
-    --tree:add(pf.mxstatus_aux_mode, data(0,1))
+    --tree:add(pf.mxstatus_aux_state, data(?,1))
+    --tree:add(pf.mxstatus_aux_mode, data(?,1))
 
     tree:add(pf.mxstatus_bat_voltage, data(9,2), (data(9,2):uint()/10.0))
     tree:add(pf.mxstatus_pv_voltage, data(11,2), (data(11,2):uint()/10.0))
 end
 
 function parse_fx_status(addr, data, tree)
-
     local misc_node = tree:add(pf.fxstatus_misc, data(11,1))
     misc_node:add(pf.fxstatus_is_230v, data(11,1))
     misc_node:add(pf.fxstatus_aux_on, data(11,1))
 
+    -- If 230V bit is set, voltages must be multiplied by 2, and currents divided by 2.
     local is_230v = bit.band(data(11,1):uint(), 0x01)
     local vmul = 1.0
     local imul = 1.0
@@ -283,17 +302,46 @@ function parse_fx_status(addr, data, tree)
     tree:add(pf.fxstatus_sell_current, data(5,1), data(5,1):uint()*imul)
 
     tree:add(pf.fxstatus_op_mode, data(6,1))
-    tree:add(pf.fxstatus_error, data(7,1))
     tree:add(pf.fxstatus_ac_mode, data(8,1))
     tree:add(pf.fxstatus_bat_voltage, data(9,2), (data(9,2):uint()/10.0))
     
-    tree:add(pf.fxstatus_warnings, data(12,1))
+    local warn_node = tree:add(pf.fxstatus_warnings, data(12,1))
+    -- TODO: Add warning bitfield
+    -- WARN_ACIN_FREQ_HIGH         = 0x01 # >66Hz or >56Hz
+    -- WARN_ACIN_FREQ_LOW          = 0x02 # <54Hz or <44Hz
+    -- WARN_ACIN_V_HIGH            = 0x04 # >140VAC or >270VAC
+    -- WARN_ACIN_V_LOW             = 0x08 # <108VAC or <207VAC
+    -- WARN_BUY_AMPS_EXCEEDS_INPUT = 0x10
+    -- WARN_TEMP_SENSOR_FAILED     = 0x20 # Internal temperature sensors have failed
+    -- WARN_COMM_ERROR             = 0x40 # Communication problem between us and the FX
+    -- WARN_FAN_FAILURE            = 0x80 # Internal cooling fan has failed
 
-    --tree:add(data(0,1), "FX STATUS")
+    local err_node = tree:add(pf.fxstatus_errors, data(7,1))
+    -- TODO: Add error bitfield
+    -- ERROR_LOW_VAC_OUTPUT = 0x01 # Inverter could not supply enough AC voltage to meet demand
+    -- ERROR_STACKING_ERROR = 0x02 # Communication error among stacked FX inverters (eg. 3 phase system)
+    -- ERROR_OVER_TEMP      = 0x04 # FX has reached maximum allowable temperature
+    -- ERROR_LOW_BATTERY    = 0x08 # Battery voltage below low battery cut-out setpoint
+    -- ERROR_PHASE_LOSS     = 0x10
+    -- ERROR_HIGH_BATTERY   = 0x20 # Battery voltage rose above safe level for 10 seconds
+    -- ERROR_SHORTED_OUTPUT = 0x40 
+    -- ERROR_BACK_FEED      = 0x80 # Another power source was connected to the FX's AC output
 end
 
 function parse_dc_status(addr, data, tree)
-    tree:add(data(0,1), "DC STATUS")
+    if addr == 0x0A then
+
+    elseif addr == 0x0B then
+
+    elseif addr == 0x0C then
+
+    elseif addr == 0x0D then
+
+    elseif addr == 0x0E then
+
+    elseif addr == 0x0F then
+
+    end
 end
 
 --local ef_too_short = ProtoExpert.new("mate.too_short.expert", "MATE packet too short",
@@ -333,9 +381,9 @@ function dissect_frame(bus, buffer, pinfo, tree, combine)
             pinfo.cols.info:prepend(info .. " ")
         end
 
-        -- INC/DEC/READ/WRITE/STATUS
-        if cmd:uint() <= 4 then
-            subtree:add(pf.query_addr, addr)
+        -- INC/DEC/READ/WRITE
+        if cmd:uint() <= 3 then
+            subtree:add(pf.reg_addr, addr)
             pinfo.cols.info:append(" ["..fmt_addr(addr).."]")
         else
             subtree:add(pf.addr, addr)
