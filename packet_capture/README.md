@@ -45,3 +45,10 @@ Or add the named pipe under Capture -> Options -> Input -> Manage Interfaces -> 
 When capturing packets in Wireshark, you can filter out uninteresting packets.
 For example, `matenet.cmd != 4` will filter out all STATUS packets (both TX & RX)
 
+# PCAPNG Anaylsis #
+
+Once you've captured some traffic and saved it to a PCAPNG file, you can open it back up for analysis
+with the custom mate dissector:
+
+Wireshark.exe <capture.pcapng> -X lua_script:.\mate_dissector.lua
+

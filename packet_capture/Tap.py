@@ -42,6 +42,7 @@ WIRESHARK_PATH = r'C:\Program Files\Wireshark\Wireshark.exe'
 WIRESHARK_PIPE = r'\\.\pipe\wireshark-mate'
 WIRESHARK_DLT  = 147 # DLT_USER0
 
+SIDELOAD_DISSECTOR = False
 LUA_SCRIPT_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'mate_dissector.lua')
 
 if not os.path.exists(LUA_SCRIPT_PATH):
@@ -142,9 +143,10 @@ def main():
                 WIRESHARK_PATH, 
                 '-i'+WIRESHARK_PIPE,
                 '-k',
-                '-o','capture.no_interface_load:TRUE',
-                '-X','lua_script:'+LUA_SCRIPT_PATH
+                '-o','capture.no_interface_load:TRUE'
             ]
+            if SIDELOAD_DISSECTOR:
+                wireshark_cmd += ['-X','lua_script:'+LUA_SCRIPT_PATH]
             proc=subprocess.Popen(wireshark_cmd)
 
         # Create named pipe
