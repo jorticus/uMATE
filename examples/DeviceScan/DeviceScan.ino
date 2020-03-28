@@ -11,15 +11,24 @@ public:
     { }
 };
 
+class DcDeviceController : public MateControllerDevice {
+public:
+    DcDeviceController(MateControllerProtocol& protocol) 
+        : MateControllerDevice(protocol, DeviceType::FlexNetDc)
+    { }
+};
+
 MateControllerProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
 //MateControllerProtocol mate_bus(Serial9b1);
 
 MxDeviceController mx_device(mate_bus);
+DcDeviceController dc_device(mate_bus);
 
 DeviceType devices[10] = { DeviceType::None };
 
 bool devicesFound = false;
 bool mx_device_available = false;
+bool dc_device_available = false;
 
 const char* dtypes[] = {
     "None",
@@ -76,15 +85,15 @@ void loop() {
 
         Serial.println();
         Serial.println("Scanning for MX device...");
-        int8_t port = mate_bus.find_device(DeviceType::Mx);
-        if (port == -1 || !mx_device.begin(port)) {
+        int8_t mx_port = mate_bus.find_device(DeviceType::Mx);
+        if (mx_port == -1 || !mx_device.begin(mx_port)) {
             Serial.println("MX device not found!");
-            devicesFound = false;
+            //devicesFound = false;
         } else {
             // TODO: Revision is displayed wrong.
             auto rev = mx_device.get_revision();
             Serial.print("MX device found on port ");
-            Serial.println(port);
+            Serial.println(mx_port);
             Serial.print("Rev: ");
             Serial.print(rev.a); Serial.print(".");
             Serial.print(rev.b); Serial.print(".");
@@ -92,10 +101,30 @@ void loop() {
             Serial.println();
             mx_device_available = true;
         }
+
+        Serial.println();
+        Serial.println("Scanning for FLEXnet DC...");
+        int8_t dc_port = mate_bus.find_device(DeviceType::FlexNetDc);
+        if (dc_port == -1 || !dc_device.begin(dc_port)) {
+            Serial.println("DC device not found!");
+        } else {
+            //auto rev = dc_device.get_revision();
+            Serial.print("DC device found on port ");
+            Serial.println(dc_port);
+            dc_device_available = true;
+        }
+
+        if (!mx_device_available || !dc_device_available) {
+            devicesFound = false;
+        }
     }
     else {
         if (mx_device_available) {
             //mx_device.query();
+        }
+
+        if (dc_device_available) {
+            //dc_device.query();
         }
     }
 }
