@@ -20,7 +20,7 @@ bool MateDeviceProtocol::recv_packet(OUT uint8_t* port, OUT packet_t* packet)
 }
 
 // Sends a response back to an attached MATE
-void MateDeviceProtocol::send_response(uint8_t port, response_t* response)
+void MateDeviceProtocol::send_response(PacketType type, response_t* response)
 {
     if (response == nullptr)
         return;
@@ -29,5 +29,5 @@ void MateDeviceProtocol::send_response(uint8_t port, response_t* response)
 
     // NOTE: This is only valid for commands 0-3.
     // Other commands may require more bytes to be sent...
-    send_data(port, reinterpret_cast<uint8_t*>(response), sizeof(response_t));
+    send_data(type, reinterpret_cast<uint8_t*>(response), sizeof(response_t));
 }

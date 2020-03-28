@@ -18,7 +18,8 @@ public:
     bool recv_packet(OUT uint8_t* port, OUT packet_t* packet);
 
     // Send a response to a received packet
-    void send_response(uint8_t port, response_t* response);
+    // type should match the type of command that this is responding to
+    void send_response(PacketType type, response_t* response);
 };
 
 

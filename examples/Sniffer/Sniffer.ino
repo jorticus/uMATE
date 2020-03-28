@@ -3,6 +3,9 @@
 // Serial0: PC connection (log output)
 // Serial1: FX/MX/DC Device (Bus B)
 // Serial2: MATE (Bus A)
+//
+// Use this in conjunction with packet_capture/Tap.py & Wireshark
+//
 
 //#include <uMate.h>
 #include <Serial9b.h>

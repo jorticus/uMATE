@@ -12,7 +12,7 @@
 #include <uMate.h>
 #include <Serial9b.h>
 
-MateDeviceProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+MateDeviceProtocol mate_bus(Serial9b2, &Serial); // (HardwareSerial9b, Debug Serial)
 
 uint16_t query(uint16_t addr);
 bool control(packet_t& packet);
@@ -20,7 +20,7 @@ void status(packet_t& packet);
 void log(packet_t& packet);
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     mate_bus.begin();
     pinMode(LED_BUILTIN, OUTPUT);
 }
@@ -55,13 +55,13 @@ void loop() {
             case PacketType::Read:
                 response.value = query(packet.addr);
                 // Always respond, even if we can't handle this address
-                mate_bus.send_response(0x03, &response);
+                mate_bus.send_response(PacketType::Read, &response);
                 break;
 
             case PacketType::Write:
                 control(packet);
                 // Always respond, even if we didn't do anything
-                mate_bus.send_response(0x03, &response);
+                mate_bus.send_response(PacketType::Write, &response);
                 break;
 
             case PacketType::Status:
@@ -157,7 +157,7 @@ void status(packet_t& packet)
         0x81, 0x80, 0x82, 0x00, 0x00, 0x3F, 0x02, 0x01, 
         0xF0, 0x03, 0xE7, 0x27, 0x0F 
     };
-    mate_bus.send_data(0, status_data, sizeof(status_data));
+    mate_bus.send_data(PacketType::Status, status_data, sizeof(status_data));
 }
 
 void log(packet_t& packet)
@@ -167,5 +167,5 @@ void log(packet_t& packet)
         0x02, 0xFF, 0x17, 0x01, 0x16, 0x3C, 0x00, 0x01, 
         0x01, 0x40, 0x00, 0x10, 0x10, day
     };
-    mate_bus.send_data(0, log_data, sizeof(log_data));
+    mate_bus.send_data(PacketType::Log, log_data, sizeof(log_data));
 }

@@ -31,8 +31,9 @@ public:
 
         if (bus.recv_packet(&dest_port, &packet))
         {
-            Serial.println("Packet received"); 
-            Serial.print("  port:  "); Serial.println(dest_port);
+            Serial.print("[");
+            //Serial.println("Packet received"); 
+            Serial.print("  port:  "); Serial.print(dest_port);
             Serial.print("  type:  "); Serial.print(packet.type, 16);
             switch (packet.type) {
                 case PacketType::Increment: Serial.print(" (inc/en)"); break;
@@ -42,9 +43,10 @@ public:
                 case PacketType::Status:  Serial.print(" (status)"); break;
                 case PacketType::Log:     Serial.print(" (log)"); break;
             }
-            Serial.println();        
-            Serial.print("  addr:  "); Serial.println(packet.addr, 16);
-            Serial.print("  param: "); Serial.println(packet.param, 16);
+            //Serial.println();        
+            Serial.print("  addr:  "); Serial.print(packet.addr, 16);
+            Serial.print("  param: "); Serial.print(packet.param, 16);
+            Serial.println("]");
 
             packet_received(dest_port, packet);
         }
@@ -58,13 +60,13 @@ public:
             case PacketType::Read:
                 response.value = query(packet.addr);
                 // Always respond, even if we can't handle this address
-                bus.send_response(0x03, &response);
+                bus.send_response(PacketType::Read, &response);
                 break;
 
             case PacketType::Write:
                 control(packet.addr, packet.param);
                 // Always respond, even if we didn't do anything
-                bus.send_response(0x03, &response);
+                bus.send_response(PacketType::Write, &response);
                 break;
 
             case PacketType::Status:
@@ -302,25 +304,66 @@ protected:
     }
 
     virtual void status(uint16_t addr) {
-        // There are two status packets that form the flexnetDC status
+        uint8_t* status_data = nullptr;
+
         switch (addr) {
-            case 1: {
-                uint8_t status_data[13] = {
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                    0x00, 0x00, 0x00, 0x00, 0x00
+            case 0x0A: {
+                Serial.println("Status0A");
+                uint8_t status_data[] = {
+                    0xff, 0xd7, 0x00, 0x12, 0x00, 0x00, 0x01, 0x02, 0x63, 0xff, 0xf5, 0x00, 0x05
                 };
-                bus.send_data(0, status_data, sizeof(status_data));
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
                 break;
             }
 
-            case 2: {
-                uint8_t status_data[13] = {
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
-                    0x00, 0x00, 0x00, 0x00, 0x00
+            case 0x0B: {
+                Serial.println("Status0B");
+                uint8_t status_data[] = {
+                    0x00, 0x00, 0x01, 0x21, 0x00, 0x00, 0x00, 0x28, 0xff, 0xd8, 0x00, 0x00, 0x00
                 };
-                bus.send_data(0, status_data, sizeof(status_data));
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
                 break;
             }
+
+            case 0x0C: {
+                Serial.println("Status0C");
+                uint8_t status_data[] = {
+                    0x0a, 0xff, 0xf6, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01
+                };
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
+                break;
+            }
+
+            case 0x0D: {
+                Serial.println("Status0D");
+                uint8_t status_data[] = {
+                    0xff, 0xff, 0x00, 0x01, 0xff, 0xff, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00
+                };
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
+                break;
+            }
+
+            case 0x0E: {
+                Serial.println("Status0E");
+                uint8_t status_data[] = {
+                    0x00, 0x00, 0x00, 0xff, 0xff, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+                };
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
+                break;
+            }
+
+            case 0x0F: {
+                Serial.println("Status0F");
+                uint8_t status_data[] = {
+                    0x00, 0x00, 0x62, 0x00, 0x00, 0xff, 0xff, 0x13, 0x00, 0x00, 0x00, 0x00, 0x00
+                };
+                bus.send_data(PacketType::Status, status_data, sizeof(status_data));
+                break;
+            }
+
+            default:
+                Serial.print("UNHANDLED STATUS: 0x");
+                Serial.println(addr, 16);
         }
     }
 };
@@ -336,7 +379,7 @@ public:
     HubEmulatorDevice(MateDeviceProtocol& bus) 
         : EmulatorDevice(bus, DeviceType::Hub)
     {
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i <= 10; i++)
             devices[0] = nullptr;
      }
 
@@ -353,35 +396,39 @@ protected:
             EmulatorDevice::packet_received(dest_port, packet);
         } else if (dest_port <= 10) {
             // Port1-10 are child devices
-            devices[dest_port]->packet_received(0, packet);
+            if (devices[dest_port] != nullptr) {
+                devices[dest_port]->packet_received(0, packet);
+            }
         }
     }
 
 protected:
-    EmulatorDevice* devices[10];
+    EmulatorDevice* devices[11];
 };
 
 
-MateDeviceProtocolProtocol mate_bus(Serial9b1, &Serial); // (HardwareSerial9b, Debug Serial)
+MateDeviceProtocol mate_bus(Serial9b2, &Serial); // (HardwareSerial9b, Debug Serial)
 MxEmulatorDevice mx_device(mate_bus);
 FxEmulatorDevice fx_device(mate_bus);
 FlexNetDcDevice flexnet_device(mate_bus);
 HubEmulatorDevice hub(mate_bus);
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     mate_bus.begin();
     pinMode(LED_BUILTIN, OUTPUT);
 
     hub.attach_device(1, mx_device);
     hub.attach_device(2, fx_device);
     hub.attach_device(3, flexnet_device);
+
+    Serial.println("READY.");
 }
 
 void loop() {
-    delay(100);
+    //delay(100);
 
-    RXLED1;
+    //RXLED1;
     hub.process();
-    RXLED0;
+    //RXLED0;
 }
