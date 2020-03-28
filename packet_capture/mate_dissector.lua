@@ -140,6 +140,22 @@ local pf = {
     mxstatus_errors_1       = ProtoField.uint8("matenet.mxstatus.errors.e3",    "High VOC",         base.DEC, NULL, 128),
     mxstatus_errors_2       = ProtoField.uint8("matenet.mxstatus.errors.e2",    "Too Hot",          base.DEC, NULL, 64),
     mxstatus_errors_3       = ProtoField.uint8("matenet.mxstatus.errors.e1",    "Shorted Battery Sensor", base.DEC, NULL, 32),
+
+    fxstatus_misc           = ProtoField.uint8("matenet.fxstatus.flags",        "Flags", base.DEC),
+    fxstatus_is_230v        = ProtoField.uint8("matenet.fxstatus.misc.is_230v", "Is 230V", base.DEC, NULL, 0x01),
+    fxstatus_aux_on         = ProtoField.uint8("matenet.fxstatus.misc.aux_on",  "Aux On", base.DEC, NULL, 0x80),
+    fxstatus_warnings       = ProtoField.uint8("matenet.fxstatus.warnings",     "Warnings", base.DEC),
+    fxstatus_error          = ProtoField.uint8("matenet.fxstatus.error",        "Error Mode", base.DEC),
+    fxstatus_ac_mode        = ProtoField.uint8("matenet.fxstatus.ac_mode",      "AC Mode", base.DEC),
+    fxstatus_op_mode        = ProtoField.uint8("matenet.fxstatus.op_mode",      "Operational Mode", base.DEC),
+
+    fxstatus_inv_current    = ProtoField.float("matenet.fxstatus.inv_current",  "Inverter Current",     {"A"}),
+    fxstatus_out_voltage    = ProtoField.float("matenet.fxstatus.out_voltage",  "Out Voltage",          {"V"}),
+    fxstatus_in_voltage     = ProtoField.float("matenet.fxstatus.in_voltage",  "In Voltage",            {"V"}),
+    fxstatus_sell_current   = ProtoField.float("matenet.fxstatus.sell_current",  "Sell Current",        {"A"}),
+    fxstatus_chg_current    = ProtoField.float("matenet.fxstatus.chg_current",  "Charge Current",       {"A"}),
+    fxstatus_buy_current    = ProtoField.float("matenet.fxstatus.buy_current",  "Buy Current",          {"A"}),
+    fxstatus_bat_voltage    = ProtoField.float("matenet.fxstatus.bat_voltage",  "Battery Voltage",      {"V"}),
 }
 mate_proto.fields = pf
 
@@ -226,8 +242,6 @@ function parse_mx_status(addr, data, tree)
     tree:add(pf.mxstatus_kwh, data(8,1), raw_kwh) -- composite value
 
     tree:add(pf.mxstatus_status, data(6,1))
-    
-
 
     local error_node = tree:add(pf.mxstatus_errors, data(7,1))
     error_node:add(pf.mxstatus_errors_1, data(7,1))
@@ -248,7 +262,34 @@ function parse_mx_status(addr, data, tree)
 end
 
 function parse_fx_status(addr, data, tree)
-    tree:add(data(0,1), "FX STATUS")
+
+    local misc_node = tree:add(pf.fxstatus_misc, data(11,1))
+    misc_node:add(pf.fxstatus_is_230v, data(11,1))
+    misc_node:add(pf.fxstatus_aux_on, data(11,1))
+
+    local is_230v = bit.band(data(11,1):uint(), 0x01)
+    local vmul = 1.0
+    local imul = 1.0
+    if is_230v then
+        vmul = 2.0
+        imul = 0.5
+    end
+
+    tree:add(pf.fxstatus_inv_current, data(0,1), data(0,1):uint()*imul)
+    tree:add(pf.fxstatus_chg_current, data(1,1), data(1,1):uint()*imul)
+    tree:add(pf.fxstatus_buy_current, data(2,1), data(2,1):uint()*imul)
+    tree:add(pf.fxstatus_in_voltage, data(3,1), data(3,1):uint()*vmul)
+    tree:add(pf.fxstatus_out_voltage, data(4,1), data(4,1):uint()*vmul)
+    tree:add(pf.fxstatus_sell_current, data(5,1), data(5,1):uint()*imul)
+
+    tree:add(pf.fxstatus_op_mode, data(6,1))
+    tree:add(pf.fxstatus_error, data(7,1))
+    tree:add(pf.fxstatus_ac_mode, data(8,1))
+    tree:add(pf.fxstatus_bat_voltage, data(9,2), (data(9,2):uint()/10.0))
+    
+    tree:add(pf.fxstatus_warnings, data(12,1))
+
+    --tree:add(data(0,1), "FX STATUS")
 end
 
 function parse_dc_status(addr, data, tree)
