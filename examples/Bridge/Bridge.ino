@@ -29,7 +29,7 @@ PJON<ThroughSerialAsync> pjon_bus(DEVICE_ID);
 
 void setup() {
     // This is the USB-CDC serial port, so baud doesn't actually matter
-    Serial.begin(9600);
+    Serial.begin(1000000);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
@@ -46,7 +46,7 @@ void setup() {
 void loop() {
     static uint16_t nexttick = 0;
     uint8_t port;
-    uint8_t buffer_len = MATE_RESP_LEN-1;
+    uint8_t buffer_len = MAX_BUFFER_LEN-2; //MATE_RESP_LEN-1;
     uint8_t buffer[MAX_BUFFER_LEN];
     
     uint8_t target_id = 0; // Broadcast
@@ -86,7 +86,7 @@ void loop() {
 
 #ifdef HAVE_HWSERIAL2
     // Incoming data from Outback MATE
-    buffer_len = 50;
+    //buffer_len = 50;
     if (mate_bus_b.available()) {
         auto err = mate_bus_b.recv_data(&port, &buffer[1], &buffer_len);
         if (err == CommsStatus::Success) {

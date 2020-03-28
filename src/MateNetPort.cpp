@@ -21,6 +21,7 @@ void MateNetPort::send_data(uint8_t port, uint8_t* data, uint8_t len)
 
     // First byte has bit 9 set (port)
     ser.write9b(port | BIT9);
+    ser.flush();
 
     // Data payload
     for (int i = 0; i < len; i++) {
@@ -118,7 +119,7 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uin
             if (rx_idx < 3)
                 return CommsStatus::InsufficientData; // Not enough data received
 
-            if (debug) debug->println("RX: EOP");
+            //if (debug) debug->println("RX: EOP");
             
             // The first byte is either the port or the response command / error indicator
             if (port != nullptr) {
