@@ -4,6 +4,7 @@
 #define DEVICE_ID (2)
 
 #define PJON_INCLUDE_TSA true // ThroughSerialAsync
+#define PJON_PACKET_MAX_LENGTH 100
 
 enum Target {
     Device = 0x0A,
@@ -45,7 +46,7 @@ void setup() {
 
 void loop() {
     static uint16_t nexttick = 0;
-    uint8_t port;
+    uint8_t byte0;
     uint8_t buffer_len = MAX_BUFFER_LEN-2; //MATE_RESP_LEN-1;
     uint8_t buffer[MAX_BUFFER_LEN];
     
@@ -58,14 +59,18 @@ void loop() {
     // } resp_data  __attribute__ ((packed));
 
     // Handle PJON protocol stack
-    pjon_bus.receive();
+    uint16_t status = pjon_bus.receive();
     pjon_bus.update();
+
+    if (status == PJON_NAK) {
+        pjon_bus.send_packet(0, "N", 1);
+    }
 
     // Incoming data from Outback Device
     if (mate_bus_a.available()) {
-        auto err = mate_bus_a.recv_data(&port, &buffer[1], &buffer_len);
+        auto err = mate_bus_a.recv_data(&byte0, &buffer[1], &buffer_len);
         if (err == CommsStatus::Success) {
-            buffer[0] = port;
+            buffer[0] = byte0;
 
             // Forward to USB Serial
             pjon_bus.send_packet(
@@ -88,9 +93,9 @@ void loop() {
     // Incoming data from Outback MATE
     //buffer_len = 50;
     if (mate_bus_b.available()) {
-        auto err = mate_bus_b.recv_data(&port, &buffer[1], &buffer_len);
+        auto err = mate_bus_b.recv_data(&byte0, &buffer[1], &buffer_len);
         if (err == CommsStatus::Success) {
-            buffer[0] = port;
+            buffer[0] = byte0;
 
             // Forward to USB Serial
             uint8_t target_id = 0; // Broadcast
@@ -111,26 +116,31 @@ void loop() {
     }
 #endif
 
-    //pjon_bus.send_packet(0, "HELLO\r\n", 7);
+    //pjon_bus.send_packet(0, "123456789012345678901234567890", 30);
+
+    //uint8_t data[] = {0x0b, 0x03, 0x89, 0x84, 0x89, 0x00, 0x55, 0x3f, 0x02, 0x00, 0x15, 0x00, 0xfe, 0x02, 0xa8};
+    //pjon_bus.send_packet(0, data, sizeof(data));
 }
 
 void receiver_function(uint8_t* payload, uint16_t length, const PJON_Packet_Info &packet_info) {
     // Forward the packet into the MATEnet bus
     if (length >= 3) {
         uint8_t target      = payload[0];
-        uint8_t port        = payload[1];
+        uint8_t byte0       = payload[1];
         length -= 2;
         uint8_t *packet     = &payload[2];
-        
+
+        //pjon_bus.reply("R", 1); // ERROR
+
         // Send a command to an attached Outback device
         if (target == Target::Device) {
-            mate_bus_a.send_data(port, packet, length);
+            mate_bus_a.send_data(byte0, packet, length);
             return;
         }
 #ifdef HAVE_HWSERIAL2
         // Send a response to an attached Outback MATE
         else if (target == Target::Mate) {
-            mate_bus_b.send_data(port, packet, length);
+            mate_bus_b.send_data(byte0, packet, length);
             return;
         }
 #endif

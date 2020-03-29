@@ -14,13 +14,13 @@ void MateNetPort::begin()
     ser.begin(MATENET_BAUD);
 }
 
-void MateNetPort::send_data(uint8_t port, uint8_t* data, uint8_t len)
+void MateNetPort::send_data(uint8_t byte0, uint8_t* data, uint8_t len)
 {
     if (data == nullptr || len == 0)
         return;
 
     // First byte has bit 9 set (port)
-    ser.write9b(port | BIT9);
+    ser.write9b(byte0 | BIT9);
     ser.flush();
 
     // Data payload
@@ -30,14 +30,14 @@ void MateNetPort::send_data(uint8_t port, uint8_t* data, uint8_t len)
 
     // Data checksum
     uint16_t checksum = 
-        (uint16_t)port + 
+        (uint16_t)byte0 + 
         calc_checksum(data, len);
     ser.write9b((checksum >> 8) & 0xFF);
     ser.write9b(checksum & 0xFF);
 
     if (debug) {
         debug->print("TX[");
-        debug->print(port);
+        debug->print(byte0);
         debug->print("] ");
         for (int i = 0; i < len; i++) {
             debug->print(data[i], 16);
@@ -56,7 +56,7 @@ bool MateNetPort::available()
     return (ser.available());
 }
 
-CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uint8_t* len)
+CommsStatus MateNetPort::recv_data(OUT uint8_t* byte0, OUT uint8_t* data, OUT uint8_t* len)
 {
     // Maximum number of RX bytes
     // (SOP + 2 bytes of checksum + data[] buffer length)
@@ -122,8 +122,8 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uin
             //if (debug) debug->println("RX: EOP");
             
             // The first byte is either the port or the response command / error indicator
-            if (port != nullptr) {
-                *port = rx_buffer[0];
+            if (byte0 != nullptr) {
+                *byte0 = rx_buffer[0];
             }
 
             // Checksum is always contained in the last two bytes
@@ -138,7 +138,7 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uin
 
             if (debug) {
                 debug->print("RX[");
-                debug->print(*port);
+                debug->print(*byte0);
                 debug->print("] ");
                 for (int i = 0; i < (*len); i++) {
                     debug->print(data[i], 16);
@@ -152,7 +152,7 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* port, OUT uint8_t* data, OUT uin
 
             // Validate checksum
             uint16_t checksum_actual = 
-                (uint16_t)*port +
+                (uint16_t)*byte0 +
                 calc_checksum(data, (*len));
 
             rx_idx = 0;

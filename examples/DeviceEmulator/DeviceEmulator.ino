@@ -310,7 +310,14 @@ protected:
             case 0x0A: {
                 Serial.println("Status0A");
                 uint8_t status_data[] = {
-                    0xff, 0xd7, 0x00, 0x12, 0x00, 0x00, 0x01, 0x02, 0x63, 0xff, 0xf5, 0x00, 0x05
+                    //0xff, 0xd7, 0x00, 0x12, 0x00, 0x00, 0x01, 0x02, 0x63, 0xff, 0xf5, 0x00, 0x05
+                    0xff, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+                    // 8:: Percentage
+                    // MinSOC: 98%
+                    // DC BAT 54.3V 08%
+                    // Output 128A
+                    // SOC: 15%
+                    // Discharging
                 };
                 bus.send_data(PacketType::Status, status_data, sizeof(status_data));
                 break;
