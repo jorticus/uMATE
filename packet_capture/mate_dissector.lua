@@ -148,8 +148,8 @@ local pf = {
     check                   = ProtoField.uint16("matenet.checksum", "Checksum", base.HEX),
 
     mxstatus_ah             = ProtoField.float("matenet.mxstatus.amp_hours",    "Amp Hours",        {"Ah"}),
-    mxstatus_pv_current     = ProtoField.int8("matenet.mxstatus.pv_current",   "PV Current",        base.UNIT_STRING, {"A"}),
-    mxstatus_bat_current    = ProtoField.int8("matenet.mxstatus.bat_current",  "Battery Current",   base.UNIT_STRING, {"A"}),
+    mxstatus_pv_current     = ProtoField.int8("matenet.mxstatus.pv_current",    "PV Current",       base.UNIT_STRING, {"A"}),
+    mxstatus_bat_current    = ProtoField.float("matenet.mxstatus.bat_current",  "Battery Current",  {"A"}),
     mxstatus_kwh            = ProtoField.float("matenet.mxstatus.kwh",          "Kilowatt Hours",   {"kWh"}),
     mxstatus_bat_voltage    = ProtoField.float("matenet.mxstatus.bat_voltage",  "Battery Voltage",  {"V"}),
     mxstatus_pv_voltage     = ProtoField.float("matenet.mxstatus.pv_voltage",   "PV Voltage",       {"V"}),
@@ -240,12 +240,8 @@ function fmt_dest(port)
 end
 
 function parse_mx_status(addr, data, tree)
-    -- Byte 0:
-    --   [7]: 1 (If this is 0, some of the AH printout disappears!)
-    --   [6..4]: AH (upper byte)
-    --   [3..0]: ?? Modifies out current & kW when 0x0F (but not any other value, and only on CC totals screen!)
     local raw_ah = bit.bor(
-        bit.rshift(bit.band(data(0,1):uint(), 0x70), 4),
+        bit.rshift(bit.band(data(0,1):uint(), 0xF0), 4),
         data(4,1):uint()
     )
 
@@ -254,8 +250,10 @@ function parse_mx_status(addr, data, tree)
         data(8,1):uint()
     ) / 10.0
 
+    local bat_curr_milli = bit.band(data(0,1):uint(), 0x0F) / 10.0
+
     tree:add(pf.mxstatus_pv_current,  data(1,1), (data(1,1):int()+128))
-    tree:add(pf.mxstatus_bat_current, data(2,1), (data(2,1):int()+128))
+    tree:add(pf.mxstatus_bat_current, data(2,1), (data(2,1):int()+128 + bat_curr_milli))
 
     tree:add(pf.mxstatus_ah, data(4,1), raw_ah)  -- composite value
     tree:add(pf.mxstatus_kwh, data(8,1), raw_kwh) -- composite value
@@ -266,8 +264,6 @@ function parse_mx_status(addr, data, tree)
     error_node:add(pf.mxstatus_errors_1, data(7,1))
     error_node:add(pf.mxstatus_errors_2, data(7,1))
     error_node:add(pf.mxstatus_errors_3, data(7,1))
-
-    tree:add(data(0,1), "Unknown Field:", bit.band(data(0,1):uint(), 0x0F))
 
     -- always seems to be 0x3F
     tree:add(data(5,1), "Unknown Field:", data(5,1):uint()) 
