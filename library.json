@@ -1,0 +1,22 @@
+{
+    "name": "uMATE",
+    "keywords": "protocol, iot",
+    "description": "Library for interfacing with Outback MATE devices",
+    "license": "GPL3", 
+    "authors":
+    {
+        "name": "Jared Sanson",
+        "maintainer": true
+    },
+    "dependencies": [
+        {
+            "name": "Arduino-Serial9b"
+        }
+    ],
+    
+    "version": "0.0.1",
+    "frameworks": [
+        "arduino"
+    ],
+    "platforms": "*"
+}

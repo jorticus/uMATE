@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "examples\\Sniffer"
+		},
+		{
+			"path": "examples\\DeviceScan"
+		},
+		{
+			"path": "examples\\DeviceEmulator"
+		},
+		{
+			"path": "examples\\Bridge"
+		},
+		{
+			"path": "examples\\MXEmulator"
+		}
+	]
+}

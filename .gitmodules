@@ -1,0 +1,3 @@
+[submodule "lib/Serial9b"]
+	path = lib/Serial9b
+	url = https://github.com/jorticus/Arduino-Serial9b.git
