@@ -38,7 +38,19 @@ public:
 
     // Read the revision from the target device
     revision_t get_revision() {
-        return protocol.get_revision(this->port);
+        if (dtype == DeviceType::Fx) {
+            // FX devices use an alternate method for retrieving revision
+            revision_t rev = {0};
+            rev.c = query(0x0001);
+            return rev;
+        }
+        else {
+            return protocol.get_revision(this->port);
+        }
+    }
+
+    DeviceType deviceType() const {
+        return dtype;
     }
 
 protected:
