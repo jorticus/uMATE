@@ -55,7 +55,7 @@ private:
 class MateControllerProtocol : public MateNetPort
 {
 public:
-    MateControllerProtocol(HardwareSerial9b& ser, Stream* debug = nullptr)
+    MateControllerProtocol(Stream9b& ser, Stream* debug = nullptr)
         : MateNetPort(ser, debug), timeout(100), devices_scanned(false)
     { }
 

@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <Arduino.h>
 #include <Serial9b.h>
+#include <type_traits>
 
 #ifndef OUT
 #define OUT
@@ -32,7 +33,9 @@ typedef struct {
     uint8_t type;
     uint16_t addr;
     uint16_t param;
-} packet_t __attribute__((packed));
+} __attribute__((packed)) packet_t;
+
+static_assert(sizeof(packet_t) == 5, "packet_t structure size must be 5 bytes");
 
 // typedef struct {
 //     packet_t packet;
@@ -42,7 +45,9 @@ typedef struct {
 typedef struct {
     //uint8_t reserved;
     uint16_t value;
-} response_t __attribute__((packed));
+} __attribute__((packed)) response_t;
+
+static_assert(sizeof(response_t) == 2, "response_t structure size must be 2 bytes");
 
 // template<typename T>
 // struct frame_s {
@@ -73,7 +78,7 @@ enum CommsStatus {
 class MateNetPort
 {
 public:
-    MateNetPort(HardwareSerial9b& ser, Stream* debug = nullptr);
+    MateNetPort(Stream9b& ser, Stream* debug = nullptr);
     void begin();
 
     bool available();
@@ -90,7 +95,7 @@ protected:
     uint16_t calc_checksum(uint8_t* data, uint8_t len);
 
 private:
-    HardwareSerial9b& ser;
+    Stream9b& ser;
 
     uint8_t rx_buffer[MAX_PACKET_LEN];
     uint8_t rx_idx;

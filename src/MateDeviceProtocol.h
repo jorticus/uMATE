@@ -10,7 +10,7 @@
 class MateDeviceProtocol : public MateNetPort
 {
 public:
-    MateDeviceProtocol(HardwareSerial9b& ser, Stream* debug = nullptr)
+    MateDeviceProtocol(Stream9b& ser, Stream* debug = nullptr)
         : MateNetPort(ser, debug)
     { }
 

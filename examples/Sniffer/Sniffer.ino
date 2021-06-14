@@ -38,7 +38,7 @@ void loop() {
     if (BUS_A.available()) {
         uint16_t b = BUS_A.read9b();
 
-        if ((bus != BusA) || (b & BIT9)) {
+        if ((bus != BusA) || (b & BIT8)) {
             Serial.print("\nA: ");
         }
         bus = BusA;
@@ -53,7 +53,7 @@ void loop() {
     if (BUS_B.available()) {
         uint16_t b = BUS_B.read9b();
 
-        if ((bus != BusB) || (b & BIT9)) {
+        if ((bus != BusB) || (b & BIT8)) {
             Serial.print("\nB: ");
         }
         bus = BusB;

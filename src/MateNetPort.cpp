@@ -3,15 +3,15 @@
 #define MATENET_BAUD 9600
 #define RX_TIMEOUT 100 // ms
 
-MateNetPort::MateNetPort(HardwareSerial9b& ser, Stream* debug)
-  : ser(ser), debug(debug)
+MateNetPort::MateNetPort(Stream9b& ser, Stream* debug)
+  : debug(debug), ser(ser)
 {
     
 }
 
 void MateNetPort::begin()
 {
-    ser.begin(MATENET_BAUD);
+    //ser.begin(MATENET_BAUD);
 }
 
 void MateNetPort::send_data(uint8_t byte0, uint8_t* data, uint8_t len)
@@ -20,7 +20,7 @@ void MateNetPort::send_data(uint8_t byte0, uint8_t* data, uint8_t len)
         return;
 
     // First byte has bit 9 set (port)
-    ser.write9b(byte0 | BIT9);
+    ser.write9b(byte0 | BIT8);
     ser.flush();
 
     // Data payload
@@ -85,7 +85,7 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* byte0, OUT uint8_t* data, OUT ui
         
         // Looking for start of packet (bit9)
         if (rx_idx == 0) {
-            if (!(b & BIT9)) {
+            if (!(b & BIT8)) {
                 rx_idx = 0;
                 return CommsStatus::NoStartOfPacketFound; // No start of packet found yet
             }
@@ -93,7 +93,7 @@ CommsStatus MateNetPort::recv_data(OUT uint8_t* byte0, OUT uint8_t* data, OUT ui
         }
         // Looking for data, but handle receiving a new start of packet (bit9)
         else {
-            if (b & BIT9) {
+            if (b & BIT8) {
                 // Start of packet found in middle of packet, restart RX buffer.
                 // This can happen if there was corruption on the bus and we missed a byte,
                 // or if we're expecting more data than what was sent.
