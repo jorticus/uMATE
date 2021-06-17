@@ -16,6 +16,7 @@ enum DeviceType {
     Fx = 2,
     Mx = 3,
     FlexNetDc = 4,
+    Dc = 4,
 
     MaxDevices
 };
