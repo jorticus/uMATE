@@ -33,17 +33,14 @@ void MateControllerProtocol::send_packet(uint8_t port, packet_t* packet)
     delay(1); // BUGFIX: Other end gets confused if we send packets too fast...
 }
 
-
-bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT response_t* response)
+bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT uint8_t* response, uint8_t response_len)
 {
-    if (for_command == nullptr || response == nullptr)
+    if (for_command == nullptr || response == nullptr || response_len == 0)
         return false;
 
-    // NOTE: This is only valid for commands 0-3.
-    // Other commands may return more than sizeof(response_t) bytes...
-    uint8_t len = sizeof(response_t);
-    auto err = recv_data(for_command, reinterpret_cast<uint8_t*>(response), &len);
-    if ((err == CommsStatus::Success) && (len == sizeof(response_t))) {
+    uint8_t len = response_len;
+    auto err = recv_data(for_command, response, &len);
+    if ((err == CommsStatus::Success) && (len == response_len)) {
         // port is actually the command we're responding to, plus an error flag in bit7
         uint8_t c = *for_command;
         if (c & 0x80) {
@@ -53,7 +50,26 @@ bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT respons
             }
             return false; // Invalid command
         }
+        return true; // response is valid
+    }
+    return false;
+}
 
+bool MateControllerProtocol::recv_response_blocking(OUT uint8_t* for_command, OUT uint8_t* response, uint8_t response_len)
+{
+    for (int i = 0; i < this->timeout; i++) {
+        if (recv_response(for_command, response, response_len)) {
+            return true;
+        }
+        delay(1);
+    }
+    if (debug) { debug->println("RX timeout"); }
+    return false;
+}
+
+bool MateControllerProtocol::recv_response(OUT uint8_t* for_command, OUT response_t* response)
+{
+    if (recv_response(for_command, reinterpret_cast<uint8_t*>(response), sizeof(response_t))) {
         response->value = SWAPENDIAN_16(response->value);
         return true;
     }
@@ -192,4 +208,44 @@ revision_t MateControllerProtocol::get_revision(uint8_t port)
     rev.b = query(3, 0, port);
     rev.c = query(4, 0, port);
     return rev;
+}
+
+bool MateControllerProtocol::read_status(uint8_t* resp_out, size_t size, uint8_t slot, uint8_t port)
+{
+    assert(size >= STATUS_RESP_SIZE);
+
+    packet_t packet;
+    packet.type = PacketType::Status;
+    packet.addr = slot;
+    packet.param = 0;
+
+    send_packet(port, &packet);
+
+    // Wait for response, with timeout (BLOCKING)
+    uint8_t for_command;
+    if (recv_response_blocking(&for_command, resp_out, STATUS_RESP_SIZE)) {
+        return true;
+    }
+
+    return false;
+}
+
+bool MateControllerProtocol::read_log(uint8_t* resp_out, size_t size, uint8_t port)
+{
+    assert(size >= LOG_RESP_SIZE);
+
+    packet_t packet;
+    packet.type = PacketType::Log;
+    packet.addr = 0;
+    packet.param = 0;
+
+    send_packet(port, &packet);
+
+    // Wait for response, with timeout (BLOCKING)
+    uint8_t for_command;
+    if (recv_response_blocking(&for_command, resp_out, LOG_RESP_SIZE)) {
+        return true;
+    }
+
+    return false;
 }

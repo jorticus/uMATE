@@ -65,6 +65,10 @@ public:
     void scan_ports();
 
     void send_packet(uint8_t port, packet_t* packet);
+
+    bool recv_response(OUT uint8_t* for_command, OUT uint8_t* response, uint8_t response_len);
+    bool recv_response_blocking(OUT uint8_t* for_command, OUT uint8_t* response, uint8_t response_len);
+
     bool recv_response(OUT uint8_t* for_command, OUT response_t* response);
     bool recv_response_blocking(OUT uint8_t* for_command, OUT response_t* response);
 
@@ -108,6 +112,10 @@ public:
 
     // Read the revision from the target device
     revision_t get_revision(uint8_t port = 0);
+
+    // Read a status or log packet
+    bool read_status(uint8_t* resp_out, size_t size, uint8_t slot=1, uint8_t port = 0);
+    bool read_log(uint8_t* resp_out, size_t size, uint8_t port = 0);
 
 private:
     int timeout;

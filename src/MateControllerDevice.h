@@ -49,6 +49,13 @@ public:
         }
     }
 
+    bool read_status(uint8_t* resp_out, size_t size, uint8_t slot=1) {
+        return protocol.read_status(resp_out, size, slot, this->m_port);
+    }
+    bool read_log(uint8_t* resp_out, size_t size) {
+        return protocol.read_log(resp_out, size, this->m_port);
+    }
+
     DeviceType deviceType() const {
         return m_dtype;
     }
