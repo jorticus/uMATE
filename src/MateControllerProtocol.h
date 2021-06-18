@@ -110,9 +110,6 @@ public:
     // returns:  The port number, or -1 if not found.
     int8_t find_device(DeviceType dtype);
 
-    // Read the revision from the target device
-    revision_t get_revision(uint8_t port = 0);
-
     // Read a status or log packet
     bool read_status(uint8_t* resp_out, size_t size, uint8_t slot=1, uint8_t port = 0);
     bool read_log(uint8_t* resp_out, size_t size, uint8_t port = 0);

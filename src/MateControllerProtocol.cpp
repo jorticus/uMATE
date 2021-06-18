@@ -201,15 +201,6 @@ int8_t MateControllerProtocol::find_device(DeviceType dtype)
     return -1; // Not found.
 }
 
-revision_t MateControllerProtocol::get_revision(uint8_t port)
-{
-    revision_t rev;
-    rev.a = query(2, 0, port);
-    rev.b = query(3, 0, port);
-    rev.c = query(4, 0, port);
-    return rev;
-}
-
 bool MateControllerProtocol::read_status(uint8_t* resp_out, size_t size, uint8_t slot, uint8_t port)
 {
     assert(size >= STATUS_RESP_SIZE);
