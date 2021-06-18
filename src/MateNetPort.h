@@ -31,7 +31,7 @@ enum PacketType {
 };
 
 static const uint8_t STATUS_RESP_SIZE = 13; // bytes
-static const uint8_t LOG_RESP_SIZE = 0;
+static const uint8_t LOG_RESP_SIZE = 14;
 
 typedef struct {
     uint8_t type;

@@ -228,7 +228,7 @@ bool MateControllerProtocol::read_log(uint8_t* resp_out, size_t size, uint8_t po
     packet_t packet;
     packet.type = PacketType::Log;
     packet.addr = 0;
-    packet.param = 0;
+    packet.param = (uint16_t)-1; // day
 
     send_packet(port, &packet);
 
